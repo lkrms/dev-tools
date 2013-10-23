@@ -169,6 +169,8 @@ if ($onCli)
     exit;
 }
 
+// PRETTY_NESTED_ARRAYS,0
+
 ?>
 <html>
 <head>

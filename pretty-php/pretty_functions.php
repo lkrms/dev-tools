@@ -239,4 +239,6 @@ function CreateSummary($tokens, $withLines = false)
     return $summary;
 }
 
+// PRETTY_NESTED_ARRAYS,0
+
 ?>

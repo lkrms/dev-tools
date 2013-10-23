@@ -18,8 +18,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// PRETTY_NESTED_ARRAYS,0
-
 // load libraries and data
 require_once (dirname(__FILE__) . "/pretty_functions.php");
 require_once (dirname(__FILE__) . "/pretty_tokens.php");
@@ -1124,6 +1122,8 @@ if ($onCli)
 {
     exit;
 }
+
+// PRETTY_NESTED_ARRAYS,0
 
 ?>
 <html>
