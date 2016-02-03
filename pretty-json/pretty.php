@@ -2,7 +2,7 @@
 
 /**
  * PrettyJson: Just another JSON beautifier.
- * Copyright (c) 2012-2013 Luke Arms
+ * Copyright (c) 2012-2016 Luke Arms
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,12 @@ require_once (dirname(__FILE__) . "/pretty_functions.php");
 // will be true if we're running on the command line
 $onCli = false;
 
+// will be true if formatting should be applied
+$doFormat = false;
+
+// will be true if formatting should be removed
+$doCompress = false;
+
 // used to detect line endings below
 $lineEndings = array("\r\n", "\n\r", "\n", "\r", );
 
@@ -32,10 +38,33 @@ if (php_sapi_name() == "cli")
 {
     $onCli = true;
 
-    if ($argc != 2 || ! file_exists($srcFile = $argv[1]))
+    if ($argc < 2 || $argc > 3 || ! file_exists($srcFile = $argv[$argc - 1]))
     {
-        echo "Usage: php pretty.php <source file>";
+        echo "Usage: php pretty.php [-format|-compress] <source file>\n\n";
         exit (1);
+    }
+
+    if ($argc == 3)
+    {
+        switch ($argv[1])
+        {
+            case "-format":
+
+                $doFormat = true;
+
+                break;
+
+            case "-compress":
+
+                $doCompress = true;
+
+                break;
+
+            default:
+
+                echo "Unknown option: $argv[1]\n\n";
+                exit (1);
+        }
     }
 
     // figure out the source file's line endings
@@ -125,8 +154,20 @@ if (json_last_error() != JSON_ERROR_NONE)
 
 if ( ! $error)
 {
-    $output = "";
-    BuildOutput($json, $output);
+    if ($doCompress)
+    {
+        $output = json_encode($json);
+    }
+    else
+    {
+        $output = "";
+        BuildOutput($json, $output);
+    }
+
+    if (PRETTY_ALTERNATE && ! $doCompress && ! $doFormat && $source == $output)
+    {
+        $output = json_encode($json);
+    }
 
     // verify that we haven't changed anything irreparably. cos that would be bad.
     $new = json_decode($output);

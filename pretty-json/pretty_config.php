@@ -15,4 +15,7 @@ define("PRETTY_UNESCAPE_SLASHES", true);
 // if enabled, dumps .out files to the working directory
 define("PRETTY_DEBUG_MODE", false);
 
+// set false to always format, otherwise will alternate between formatted and compressed
+define("PRETTY_ALTERNATE", true);
+
 ?>
