@@ -15,6 +15,9 @@
 // arrays will appear one-element-per-line if enabled
 @define("PRETTY_NESTED_ARRAYS", true);
 
+// nested arrays will be left-aligned with their enclosing code if enabled (otherwise they'll be aligned with column 1)
+@define("PRETTY_INDENT_NESTED_ARRAYS", true);
+
 // "my_function() ;" vs. "my_function();"
 @define("PRETTY_SPACE_BEFORE_SEMICOLON", false);
 

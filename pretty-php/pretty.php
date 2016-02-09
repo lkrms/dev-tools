@@ -125,6 +125,7 @@ foreach ($lines as $line)
             case "PRETTY_CREATE_MANY_BACKUPS":
             case "PRETTY_LINE_BEFORE_BRACE":
             case "PRETTY_NESTED_ARRAYS":
+            case "PRETTY_INDENT_NESTED_ARRAYS":
             case "PRETTY_SPACE_BEFORE_SEMICOLON":
             case "PRETTY_SPACE_BEFORE_FOR_SEMICOLON":
             case "PRETTY_SPACE_BEFORE_PARENTHESES":
@@ -219,7 +220,7 @@ for ($i = 0; $i < count($tokens); $i++)
     }
 
     $block                              = new CodeBlock($type, $code, $line, $indent);
-    $block->DeIndent                    = $arrayCount ? $arrayStartIndent : 0;
+    $block->DeIndent                    = ($arrayCount && ! PRETTY_INDENT_NESTED_ARRAYS) ? $arrayStartIndent : 0;
     $blocks[$i]                         = $block;
     $block->LineBefore                  = $pendingLineBefore;
     $pendingLineBefore                  = false;
@@ -555,7 +556,7 @@ for ($i = 0; $i < count($tokens); $i++)
                 if ($arrayStarted == $i - 1)
                 {
                     $block->LineAfter  = ! $compactTags;
-                    $block->DeIndent   = $arrayStartIndent;
+                    $block->DeIndent   = ! PRETTY_INDENT_NESTED_ARRAYS ? $arrayStartIndent : 0;
                     $block->Indent++;
                     $indent++;
                 }
