@@ -652,14 +652,42 @@ for ($i = 0; $i < count($tokens); $i++)
                 break;
             }
 
-            if (PRETTY_SPACE_BEFORE_BRACKETS)
+            // could be a PHP 5.4 array
+            if ($i >= 1 && ! in_array($blocks[$i - 1]->Type, array(T_VARIABLE, ")", "]")))
             {
                 $block->SpaceBefore = true;
-            }
 
-            if (PRETTY_SPACE_INSIDE_BRACKETS)
+                if (PRETTY_NESTED_ARRAYS)
+                {
+                    // note our current indent level if this is the outmost array
+                    if ( ! $arrayCount++)
+                    {
+                        $arrayStartIndent = $indent;
+                    }
+
+                    array_push($arrayParenthesesCount, 0);
+                    $block->LineAfter  = ! $compactTags;
+                    $block->DeIndent   = ! PRETTY_INDENT_NESTED_ARRAYS ? $arrayStartIndent : 0;
+                    $block->Indent++;
+                    $indent++;
+                }
+            }
+            else
             {
-                $block->SpaceAfter = true;
+                if ($arrayCount)
+                {
+                    array_push($arrayParenthesesCount, array_pop($arrayParenthesesCount) + 1);
+                }
+
+                if (PRETTY_SPACE_BEFORE_BRACKETS)
+                {
+                    $block->SpaceBefore = true;
+                }
+
+                if (PRETTY_SPACE_INSIDE_BRACKETS)
+                {
+                    $block->SpaceAfter = true;
+                }
             }
 
             break;
@@ -671,16 +699,45 @@ for ($i = 0; $i < count($tokens); $i++)
                 break;
             }
 
-            if (PRETTY_SPACE_INSIDE_BRACKETS)
+            $requestBlank = false;
+
+            // PHP 5.4 array?
+            if ($arrayCount)
             {
-                $block->SpaceBefore = true;
+                // yes, this is meant to be an assignment
+                if ( ! ($c = array_pop($arrayParenthesesCount)))
+                {
+                    $block->LineBefore = ! $compactTags;
+                    $block->Indent--;
+                    $indent--;
+                    $arrayCount--;
+                    $requestBlank = true;
+                }
+                else
+                {
+                    array_push($arrayParenthesesCount, --$c);
+                }
+            }
+            else
+            {
+                if (PRETTY_SPACE_INSIDE_BRACKETS)
+                {
+                    $block->SpaceBefore = true;
+                }
             }
 
             // ensure empty brackets appear as "[]"
             if ($i >= 1 && $blocks[$i - 1]->Type == "[")
             {
                 $block->SpaceBefore          = false;
+                $block->LineBefore           = false;
                 $blocks[$i - 1]->SpaceAfter  = false;
+                $blocks[$i - 1]->LineAfter   = false;
+            }
+            elseif ($requestBlank)
+            {
+                $blankAfterSemicolon               = true;
+                $blankAfterSemicolonNoParentheses  = true;
             }
 
             break;
@@ -991,6 +1048,7 @@ for ($i = 0; $i < count($blocks); $i++)
 
         $block->OutLine  = $line;
         $block->OutCol   = $col;
+        $indent          = $block->Indent - $block->DeIndent;
 
         if ($block->Type == T_DOUBLE_ARROW || in_array($block->Type, $tAssignmentOperators))
         {
@@ -1006,12 +1064,14 @@ for ($i = 0; $i < count($blocks); $i++)
                     break;
                 }
 
+                // identify the indent level of the whole assignment
+                $indent = $blocks[$j]->Indent - $blocks[$j]->DeIndent;
                 $j--;
             }
 
             if ($isAssign)
             {
-                $assignments[] = array($line, $col, $i);
+                $assignments[] = array($line, $col, $i, $indent);
             }
         }
     }
@@ -1028,7 +1088,7 @@ if (PRETTY_ALIGN)
 
     for ($j = 0; $j < count($assignments); $j++)
     {
-        if (isset($assignments[$j - 1]) && $assignments[$j][0] - $assignments[$j - 1][0] == 1 && abs($assignments[$j][1] - $assignments[$j - 1][1]) <= PRETTY_ALIGN_RANGE && ! (($blocks[$assignments[$j][2]]->Type == T_DOUBLE_ARROW) xor ($blocks[$assignments[$j - 1][2]]->Type == T_DOUBLE_ARROW)))
+        if (isset($assignments[$j - 1]) && $assignments[$j][0] - $assignments[$j - 1][0] == 1 && abs($assignments[$j][1] - $assignments[$j - 1][1]) <= PRETTY_ALIGN_RANGE && ! (($blocks[$assignments[$j][2]]->Type == T_DOUBLE_ARROW) xor ($blocks[$assignments[$j - 1][2]]->Type == T_DOUBLE_ARROW)) && $assignments[$j][3] == $assignments[$j - 1][3])
         {
             if (is_null($startLine))
             {
