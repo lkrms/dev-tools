@@ -152,13 +152,14 @@ $tDeclarations = array(
 $tNoTrim = array(
     T_ENCAPSED_AND_WHITESPACE,
     T_INLINE_HTML,
-);
-
-$tTrimRight = array(
     T_OPEN_TAG,
     T_OPEN_TAG_WITH_ECHO,
 );
 
+// only remove whitespace from the right of these (e.g. "<?php", except PHP parses "<?php " as a different token)
+$tTrimRight = array();
+
+// only remove whitespace from the left of these
 $tTrimLeft = array(
     T_CLOSE_TAG,
 );

@@ -317,6 +317,11 @@ for ($i = 0; $i < count($tokens); $i++)
 
             $block->BlankLineAfter = true;
 
+            if (substr($block->Code, - strlen(PRETTY_EOL)) == PRETTY_EOL)
+            {
+                $block->Code = substr($block->Code, 0, - strlen(PRETTY_EOL));
+            }
+
             break;
 
         /* ?> */
@@ -1129,16 +1134,18 @@ $errFolder  = dirname(__FILE__) . "/";
 $newPurged  = PurgeTokens($newTokens = token_get_all($output), $tNoCompare);
 $oldPurged  = PurgeTokens($oldTokens = token_get_all($source), $tNoCompare);
 
+if (PRETTY_DEBUG_MODE)
+{
+    file_put_contents("{$errFolder}prettySrc.tokens.out", print_r(token_get_all($source), true));
+    file_put_contents("{$errFolder}prettyDest.tokens.out", print_r(token_get_all($output), true));
+    file_put_contents("{$errFolder}prettySrc.err", CreateSummary($oldPurged));
+    file_put_contents("{$errFolder}prettyDest.err", CreateSummary($newPurged));
+    file_put_contents("{$errFolder}prettySrcLines.err", CreateSummary(PurgeTokens($oldTokens, $tNoCompare, false), true));
+    file_put_contents("{$errFolder}prettyOutput.err", $output);
+}
+
 if ($newPurged != $oldPurged)
 {
-    if (PRETTY_DEBUG_MODE)
-    {
-        file_put_contents("{$errFolder}prettySrc.err", CreateSummary($oldPurged));
-        file_put_contents("{$errFolder}prettyDest.err", CreateSummary($newPurged));
-        file_put_contents("{$errFolder}prettySrcLines.err", CreateSummary(PurgeTokens($oldTokens, $tNoCompare, false), true));
-        file_put_contents("{$errFolder}prettyOutput.err", $output);
-    }
-
     if ($onCli)
     {
         print "Error: unable to format $srcFile. Please check your syntax and/or file a bug report.";
