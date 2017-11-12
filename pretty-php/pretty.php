@@ -2,7 +2,7 @@
 
 /**
  * PrettyPhp: Just another PHP beautifier.
- * Copyright (c) 2012-2013 Luke Arms
+ * Copyright (c) 2012-2017 Luke Arms
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -163,8 +163,8 @@ require_once (dirname(__FILE__) . "/pretty_config.php");
 $tokens = PurgeTokens(token_get_all($source), $tSkip, false);
 
 // work the magic
-$blocks                            = array();
-$indent                            = 0;
+$blocks                            = array();    // filled with CodeBlock objects
+$indent                            = 0;    // current level of indentation
 $arrayCount                        = 0;
 $arrayParenthesesCount             = array();
 $arrayStarted                      = -2;
@@ -185,7 +185,7 @@ $indentParenthesesCount            = 0;
 $tempIndents                       = array();
 $lastTempIndentEnded               = -2;
 $lastTempIndents                   = array();
-$pendingIndent                     = 0;
+$pendingIndent                     = 0;    // allows indentation changes to be passed to next block
 $pendingLineBefore                 = false;
 $assignments                       = array();
 $noCommentPin                      = array("}", T_CLOSE_TAG);
@@ -199,13 +199,16 @@ $noAssignment = array_merge($tAssignmentOperators, $tControl, $tDeclarations);
 
 for ($i = 0; $i < count($tokens); $i++)
 {
-    $token          = $tokens[$i];
-    $type           = $token[0];
-    $code           = $token[1];
-    $line           = $token[2];
+    $token  = $tokens[$i];
+    $type   = $token[0];
+    $code   = $token[1];
+    $line   = $token[2];
+
+    // process pending indentation changes
     $indent        += $pendingIndent;
     $pendingIndent  = 0;
 
+    // trim almost everything
     if (in_array($type, $tTrimLeft))
     {
         $code = ltrim($code);
@@ -219,9 +222,16 @@ for ($i = 0; $i < count($tokens); $i++)
         $code = trim($code);
     }
 
-    $block                              = new CodeBlock($type, $code, $line, $indent);
+    // create a CodeBlock instance for this token
+    $block       = new CodeBlock($type, $code, $line, $indent, $i ? $blocks[$i - 1] : null);
+    $blocks[$i]  = $block;
+
+    if ($block->PreviousBlock)
+    {
+        $block->PreviousBlock->NextBlock = $block;
+    }
+
     $block->DeIndent                    = ($arrayCount && ! PRETTY_INDENT_NESTED_ARRAYS) ? $arrayStartIndent : 0;
-    $blocks[$i]                         = $block;
     $block->LineBefore                  = $pendingLineBefore;
     $pendingLineBefore                  = false;
     $oldBlankAfterSemicolonParentheses  = $blankAfterSemicolonParentheses;

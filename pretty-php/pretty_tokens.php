@@ -1,9 +1,15 @@
 <?php
 
+// these tokens are purged before processing begins
 $tSkip = array(
-    T_BAD_CHARACTER,
     T_WHITESPACE,
 );
+
+// PHP 7 appears to have removed this
+if (defined('T_BAD_CHARACTER'))
+{
+    $tSkip[] = T_BAD_CHARACTER;
+}
 
 $tKeywords = array(
     T_AS,
@@ -17,10 +23,10 @@ $tKeywords = array(
     T_INCLUDE_ONCE,
     T_INSTANCEOF,
     T_LIST,
-    T_REQUIRE,
-    T_REQUIRE_ONCE,
     T_NEW,
     T_PRINT,
+    T_REQUIRE,
+    T_REQUIRE_ONCE,
     T_THROW,
     T_USE,
 );
@@ -97,6 +103,12 @@ $tComparisonOperators = array(
     T_IS_NOT_IDENTICAL,
     T_IS_SMALLER_OR_EQUAL,
 );
+
+// PHP 7 added this
+if (defined('T_SPACESHIP'))
+{
+    $tComparisonOperators[] = T_SPACESHIP;
+}
 
 $tLogicalOperators = array(
     "!",

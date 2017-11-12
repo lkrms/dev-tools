@@ -12,6 +12,16 @@ class CodeBlock
 
     public $Indent;
 
+    /**
+     * @var CodeBlock
+     */
+    public $PreviousBlock;
+
+    /**
+     * @var CodeBlock
+     */
+    public $NextBlock;
+
     public $OutLine;
 
     public $OutCol;
@@ -34,12 +44,13 @@ class CodeBlock
 
     public $BlankLineAfter = false;
 
-    public function __construct($type, $code, $line, $indent)
+    public function __construct($type, $code, $line, $indent, $previous)
     {
-        $this->Type    = $type;
-        $this->Code    = $code;
-        $this->Line    = $line;
-        $this->Indent  = $indent;
+        $this->Type           = $type;
+        $this->Code           = $code;
+        $this->Line           = $line;
+        $this->Indent         = $indent;
+        $this->PreviousBlock  = $previous;
 
         if (PRETTY_DEBUG_MODE && is_int($type))
         {
