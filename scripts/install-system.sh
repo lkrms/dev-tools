@@ -119,6 +119,7 @@ sudo apt-get -y install \
     meld \
     mysql-workbench \
     nodejs \
+    npm \
     openssh-server \
     owncloud-client \
     pdftk \
@@ -187,7 +188,7 @@ popd >/dev/null
 
 echo -e "Disabling TeamViewer daemon...\n"
 
-sudo teamviewer daemon disable
+sudo teamviewer daemon disable >/dev/null 2>&1
 
 echo -e "Configuring MariaDB (MySQL)...\n"
 
@@ -330,4 +331,6 @@ gsettings set com.canonical.Unity.Launcher launcher-position Bottom
 echo -e "\n\nDone. You may also want to install: libpam-gnome-keyring (if this is a Lubuntu installation) or unity-tweak-tool"
 
 echo -e "\n\nPlanning to work with Docker and Dory? Consider adding a '#' before 'dns=dnsmasq' in /etc/NetworkManager/NetworkManager.conf, disable Apache with 'systemctl disable apache2.service', and reboot."
+
+echo -e "\n\n"
 
