@@ -1,5 +1,11 @@
 #!/bin/bash
 
+if [ "$(uname -s)" != "Linux" ]; then
+
+    echo "Error: $(basename "$0") is not supported on this platform."
+
+fi
+
 . /etc/lsb-release
 
 echo -e "Upgrading everything that's currently installed...\n"
