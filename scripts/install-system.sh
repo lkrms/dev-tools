@@ -3,6 +3,7 @@
 if [ "$(uname -s)" != "Linux" ]; then
 
     echo "Error: $(basename "$0") is not supported on this platform."
+    exit 1
 
 fi
 
@@ -177,6 +178,10 @@ wget -c https://release.gitkraken.com/linux/gitkraken-amd64.deb || exit 1
 sudo dpkg -EGi copyq_3.1.1_Ubuntu_16.04-1_amd64.deb dbeaver-ce_4.3.0_amd64.deb gitkraken-amd64.deb master-pdf-editor-4.3.61_qt5.amd64.deb skypeforlinux-64.deb slack-desktop-3.0.0-amd64.deb teamviewer_amd64.deb || exit 1
 
 popd >/dev/null
+
+echo -e "Disabling TeamViewer daemon...\n"
+
+sudo teamviewer daemon disable
 
 echo -e "Configuring MariaDB (MySQL)...\n"
 
