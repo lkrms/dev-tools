@@ -112,6 +112,7 @@ sudo apt-get -y install \
     iotop \
     keepassxc \
     libapache2-mod-php \
+    libpam0g:i386 \
     libqt5script5 \
     libreoffice \
     mariadb-server \
@@ -125,6 +126,7 @@ sudo apt-get -y install \
     php-bcmath \
     php-cli \
     php-curl \
+    php-dev \
     php-gd \
     php-gettext \
     php-imagick \
@@ -327,5 +329,5 @@ gsettings set com.canonical.Unity.Launcher launcher-position Bottom
 
 echo -e "\n\nDone. You may also want to install: libpam-gnome-keyring (if this is a Lubuntu installation) or unity-tweak-tool"
 
-echo -e "\n\nPlanning to work with Docker and Dory? Consider adding a '#' before 'dns=dnsmasq' in /etc/NetworkManager/NetworkManager.conf"
+echo -e "\n\nPlanning to work with Docker and Dory? Consider adding a '#' before 'dns=dnsmasq' in /etc/NetworkManager/NetworkManager.conf, disable Apache with 'systemctl disable apache2.service', and reboot."
 
