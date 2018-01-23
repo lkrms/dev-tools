@@ -95,6 +95,7 @@ sudo apt-get -y install \
     debconf-utils \
     dkms \
     docker-ce \
+    docker-compose \
     filezilla \
     firefox \
     geany \
@@ -116,6 +117,7 @@ sudo apt-get -y install \
     mariadb-server \
     meld \
     mysql-workbench \
+    nodejs \
     openssh-server \
     owncloud-client \
     pdftk \
@@ -145,6 +147,7 @@ sudo apt-get -y install \
     qtdeclarative5-controls-plugin \
     qtdeclarative5-dialogs-plugin \
     remmina \
+    ruby \
     scribus \
     shutter \
     speedcrunch \
@@ -152,6 +155,7 @@ sudo apt-get -y install \
     sublime-text \
     syslinux-utils \
     thunderbird \
+    traceroute \
     trickle \
     typora \
     usb-creator-gtk \
@@ -322,4 +326,6 @@ fi
 gsettings set com.canonical.Unity.Launcher launcher-position Bottom
 
 echo -e "\n\nDone. You may also want to install: libpam-gnome-keyring (if this is a Lubuntu installation) or unity-tweak-tool"
+
+echo -e "\n\nPlanning to work with Docker and Dory? Consider adding a '#' before 'dns=dnsmasq' in /etc/NetworkManager/NetworkManager.conf"
 
