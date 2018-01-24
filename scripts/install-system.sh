@@ -24,6 +24,8 @@ sudo apt-get -y install software-properties-common || exit 1
 
 echo -e "Adding all required apt repositories...\n"
 
+OLD_SOURCES="$(cat /etc/apt/sources.list /etc/apt/sources.list.d/*.list)"
+
 cat /etc/apt/sources.list.d/*.list | grep -q 'caffeine-developers/ppa' || sudo add-apt-repository -y ppa:caffeine-developers/ppa || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'phoerious/keepassxc' || sudo add-apt-repository -y ppa:phoerious/keepassxc || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'scribus/ppa' || sudo add-apt-repository -y ppa:scribus/ppa || exit 1
@@ -80,7 +82,13 @@ if [ ! -f /etc/apt/sources.list.d/typora.list ]; then
 
 fi
 
-sudo apt-get update || exit 1
+if [ "$(cat /etc/apt/sources.list /etc/apt/sources.list.d/*.list)" != "$OLD_SOURCES" ]; then
+
+    echo -e "Repositories have changed; running apt-get update...\n"
+
+    sudo apt-get update || exit 1
+
+fi
 
 echo -e "Installing everything you might need...\n"
 
@@ -88,7 +96,6 @@ sudo apt-get -y install \
     apache2 \
     attr \
     autokey-gtk \
-    avahi-daemon \
     build-essential \
     caffeine \
     dconf-editor \
@@ -104,7 +111,6 @@ sudo apt-get -y install \
     gimp \
     git \
     google-chrome-stable \
-    gvfs-bin \
     heirloom-mailx \
     imagemagick \
     indicator-multiload \
@@ -168,7 +174,8 @@ sudo apt-get -y install \
     virtualbox-5.2 \
     vlc \
     whois \
-    x11vnc || exit 1
+    x11vnc \
+    || exit 1
 
 sudo adduser "$USER" vboxusers || exit 1
 sudo groupadd -f docker || exit 1
@@ -218,12 +225,12 @@ function applyPhpSetting {
     if grep -qE "^\s*${SETTINGNAME}\s*=" "$INIFILE"; then
 
         # we have a defined setting to replace
-        sudo sed -ri "s/^\s*${SETTINGNAME}\s*=.*$/${SETTINGNAME} = ${SETTINGVALUE}/" "$INIFILE"
+        sudo sed -ri "s#^\s*${SETTINGNAME}\s*=.*\$#${SETTINGNAME} = ${SETTINGVALUE}#" "$INIFILE"
 
     elif grep -qE "^\s*;\s*${SETTINGNAME}\s*=" "$INIFILE"; then
 
         # we have a commented-out setting to replace
-        sudo sed -ri "s/^\s*;\s*${SETTINGNAME}\s*=.*$/${SETTINGNAME} = ${SETTINGVALUE}/" "$INIFILE"
+        sudo sed -ri "s#^\s*;\s*${SETTINGNAME}\s*=.*\$#${SETTINGNAME} = ${SETTINGVALUE}#" "$INIFILE"
 
     else
 
@@ -232,6 +239,33 @@ function applyPhpSetting {
     fi
 
 }
+
+function enablePhpExtension {
+
+    INIFILE=$1
+    SETTINGNAME=$2
+    SETTINGVALUE=$3
+
+    # as above, except we're matching on value too
+    if grep -qE "^\s*${SETTINGNAME}\s*=\s*${SETTINGVALUE}\s*$" "$INIFILE"; then
+
+        # we have a defined setting to replace
+        sudo sed -ri "s#^\s*${SETTINGNAME}\s*=\s*${SETTINGVALUE}\s*\$#${SETTINGNAME} = ${SETTINGVALUE}#" "$INIFILE"
+
+    elif grep -qE "^\s*;\s*${SETTINGNAME}\s*=\s*${SETTINGVALUE}\s*$" "$INIFILE"; then
+
+        # we have a commented-out setting to replace
+        sudo sed -ri "s#^\s*;\s*${SETTINGNAME}\s*=\s*${SETTINGVALUE}\s*\$#${SETTINGNAME} = ${SETTINGVALUE}#" "$INIFILE"
+
+    else
+
+        echo "${SETTINGNAME} = ${SETTINGVALUE}" | sudo tee -a "$INIFILE" >/dev/null
+
+    fi
+
+}
+
+sudo mkdir -p /usr/local/lib/php/extensions && sudo chown ${USER}:$(id -g) /usr/local/lib/php/extensions
 
 [ -d /etc/php ] && find /etc/php -name php.ini -type f | while read INI; do
 
@@ -243,6 +277,12 @@ function applyPhpSetting {
     applyPhpSetting "$INI" xdebug.profiler_enable 1
     applyPhpSetting "$INI" xdebug.remote_enable 1
     applyPhpSetting "$INI" xdebug.remote_connect_back 1
+
+    [ -d /usr/local/lib/php/extensions ] && find /usr/local/lib/php/extensions -name '*.so' -type f | while read EXTENSION; do
+
+        enablePhpExtension "$INI" extension "$EXTENSION"
+
+    done
 
 done
 
@@ -326,6 +366,17 @@ EOF
     sudo systemctl start x11vnc.service
 
 fi
+
+# use Meld as our default merge / diff tool
+if [ "$(git config --global merge.tool)" == "" ]; then
+
+    git config --global merge.tool meld
+    git config --global --bool mergetool.prompt false
+
+fi
+
+# GitKraken supports KDiff, but not Meld, so ...
+command -v kdiff3 >/dev/null 2>&1 || sudo ln -s /usr/bin/meld /usr/local/bin/kdiff3
 
 # on Ubuntu, move launcher to bottom
 gsettings set com.canonical.Unity.Launcher launcher-position Bottom
