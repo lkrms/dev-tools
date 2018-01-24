@@ -111,6 +111,8 @@ sudo apt-get -y install \
     inkscape \
     iotop \
     keepassxc \
+    lib32ncurses5 \
+    lib32z1 \
     libapache2-mod-php \
     libpam0g:i386 \
     libqt5script5 \
@@ -178,11 +180,11 @@ wget -c http://get.code-industry.net/public/master-pdf-editor-4.3.61_qt5.amd64.d
 wget -c https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
 wget -c https://downloads.slack-edge.com/linux_releases/slack-desktop-3.0.0-amd64.deb || exit 1
 wget -c https://github.com/hluk/CopyQ/releases/download/v3.1.1/copyq_3.1.1_Ubuntu_16.04-1_amd64.deb || exit 1
-wget -c https://github.com/serge-rider/dbeaver/releases/download/4.3.0/dbeaver-ce_4.3.0_amd64.deb || exit 1
+wget -c https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
 wget -c https://go.skype.com/skypeforlinux-64.deb || exit 1
 wget -c https://release.gitkraken.com/linux/gitkraken-amd64.deb || exit 1
 
-sudo dpkg -EGi copyq_3.1.1_Ubuntu_16.04-1_amd64.deb dbeaver-ce_4.3.0_amd64.deb gitkraken-amd64.deb master-pdf-editor-4.3.61_qt5.amd64.deb skypeforlinux-64.deb slack-desktop-3.0.0-amd64.deb teamviewer_amd64.deb || exit 1
+sudo dpkg -EGi copyq_3.1.1_Ubuntu_16.04-1_amd64.deb dbeaver-ce_latest_amd64.deb gitkraken-amd64.deb master-pdf-editor-4.3.61_qt5.amd64.deb skypeforlinux-64.deb slack-desktop-3.0.0-amd64.deb teamviewer_amd64.deb || exit 1
 
 popd >/dev/null
 
