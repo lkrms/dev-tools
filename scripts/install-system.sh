@@ -280,7 +280,15 @@ sudo mkdir -p /usr/local/lib/php/extensions && sudo chown ${USER}:$(id -g) /usr/
 
     [ -d /usr/local/lib/php/extensions ] && find /usr/local/lib/php/extensions -name '*.so' -type f | while read EXTENSION; do
 
-        enablePhpExtension "$INI" extension "$EXTENSION"
+        if [ "$(basename "$EXTENSION")" != "xdebug.so" ]; then
+
+            enablePhpExtension "$INI" extension "$EXTENSION"
+
+        else
+
+            enablePhpExtension "$INI" zend_extension "$EXTENSION"
+
+        fi
 
     done
 
