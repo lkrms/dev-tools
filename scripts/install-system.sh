@@ -96,6 +96,7 @@ sudo apt-get -y install \
     apache2 \
     attr \
     autokey-gtk \
+    blueman \
     build-essential \
     caffeine \
     dconf-editor \
