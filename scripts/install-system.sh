@@ -27,6 +27,7 @@ echo -e "Adding all required apt repositories...\n"
 OLD_SOURCES="$(cat /etc/apt/sources.list /etc/apt/sources.list.d/*.list)"
 
 cat /etc/apt/sources.list.d/*.list | grep -q 'caffeine-developers/ppa' || sudo add-apt-repository -y ppa:caffeine-developers/ppa || exit 1
+cat /etc/apt/sources.list.d/*.list | grep -q 'linrunner/tlp' || sudo add-apt-repository -y ppa:linrunner/tlp || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'phoerious/keepassxc' || sudo add-apt-repository -y ppa:phoerious/keepassxc || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'scribus/ppa' || sudo add-apt-repository -y ppa:scribus/ppa || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'wereturtle/ppa' || sudo add-apt-repository -y ppa:wereturtle/ppa || exit 1
@@ -93,6 +94,7 @@ fi
 echo -e "Installing everything you might need...\n"
 
 sudo apt-get -y install \
+    acpi-call-dkms \
     apache2 \
     attr \
     autokey-gtk \
@@ -150,6 +152,7 @@ sudo apt-get -y install \
     php-xdebug \
     php-xml \
     php-xmlrpc \
+    powertop \
     pv \
     python \
     python-dateutil \
@@ -167,6 +170,9 @@ sudo apt-get -y install \
     sublime-text \
     syslinux-utils \
     thunderbird \
+    tlp \
+    tlp-rdw \
+    tp-smapi-dkms \
     traceroute \
     trickle \
     typora \
