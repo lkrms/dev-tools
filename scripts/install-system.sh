@@ -319,8 +319,8 @@ if [ ! -f /etc/apache2/sites-available/virtual.conf ]; then
 
     sudo tee "/etc/apache2/sites-available/virtual.conf" >/dev/null <<EOF
 <VirtualHost *:80>
-    VirtualDocumentRoot /var/www/virtual/%0
-    VirtualScriptAlias /var/www/virtual/%0
+    VirtualDocumentRoot /var/www/virtual/%0/html
+    VirtualScriptAlias /var/www/virtual/%0/html
     <FilesMatch "\.(html|htm|js|css|json)$">
         FileETag None
         <IfModule mod_headers.c>
@@ -334,7 +334,7 @@ if [ ! -f /etc/apache2/sites-available/virtual.conf ]; then
         Options FollowSymLinks
         AllowOverride None
     </Directory>
-    <Directory /var/www/virtual/>
+    <Directory /var/www/virtual/*/html>
         Options Indexes FollowSymLinks
         AllowOverride all
         Require all granted
