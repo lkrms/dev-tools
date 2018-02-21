@@ -29,6 +29,8 @@ while read -d $'\0' FOLDER; do
 
     echo -e "Updating ${BOLD}${REPO_PATH}${NC} using Git..."
 
+    CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+
     if [ "$(git remote)" != "" ]; then
 
         git pull
@@ -49,7 +51,7 @@ while read -d $'\0' FOLDER; do
 
     while read REMOTE; do
 
-        if ! git diff --quiet "$REMOTE..HEAD" --; then
+        if ! git diff --quiet "$REMOTE/$CURRENT_BRANCH.." --; then
 
             STALE_REMOTES+="${BLUE}$REMOTE${NC},"
 
