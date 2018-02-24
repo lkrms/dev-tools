@@ -33,6 +33,18 @@ function main_loop {
 
     done
 
+    # extract any tar files
+    find "$1" -maxdepth 1 \( -iname '*.tar' -o -iname '*.tar.*' \) -type f -print0 | while read -d $'\0' TAR; do
+
+        TAR_NAME="$(basename "$TAR")"
+
+        echo "Extracting $TAR_NAME..."
+        tar -xf "$TAR" -C "$MOUNT_ROOT/zip/" || exit 2
+
+        echo "Done extracting $TAR_NAME."
+
+    done
+
     # mount any disk images
     find "$1" -maxdepth 1 -iname '*.dmg' -type f -exec hdiutil attach -mountroot "$MOUNT_ROOT" '{}' \;
 
