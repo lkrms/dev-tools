@@ -7,7 +7,7 @@ if [ "$(uname)" != "Darwin" ]; then
 
 fi
 
-/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+command -v brew >/dev/null 2>&1 || /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" || exit 2
 
 brew install \
     coreutils \
@@ -18,7 +18,8 @@ brew install \
     pv \
     rsync \
     wget \
-    youtube-dl
+    youtube-dl \
+    || exit 2
 
 # Uncomment if you need to mount ext4 volumes on your Mac:
 #brew cask install osxfuse
