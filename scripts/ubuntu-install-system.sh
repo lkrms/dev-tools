@@ -7,7 +7,7 @@ if [ "$(uname -s)" != "Linux" ]; then
 
 fi
 
-. /etc/lsb-release
+. /etc/lsb-release || exit 2
 
 echo -e "Upgrading everything that's currently installed...\n"
 

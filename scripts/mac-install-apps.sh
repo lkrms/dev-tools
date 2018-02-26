@@ -1,5 +1,12 @@
 #!/bin/bash
 
+if [ "$(uname)" != "Darwin" ]; then
+
+    echo "Error: $(basename "$0") is not supported on this platform."
+    exit 1
+
+fi
+
 if [ "$#" -ne "1" ]; then
 
     echo "Usage: $(basename "$0") </path/to/app/folder>"
