@@ -133,6 +133,7 @@ sudo apt-get -y install \
     npm \
     openssh-server \
     owncloud-client \
+    pandoc \
     pdftk \
     php \
     php-bcmath \
@@ -169,6 +170,8 @@ sudo apt-get -y install \
     spotify-client \
     sublime-text \
     syslinux-utils \
+    texlive-fonts-recommended \
+    texlive-latex-recommended \
     thunderbird \
     tlp \
     tlp-rdw \
