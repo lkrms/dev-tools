@@ -83,6 +83,14 @@ if [ ! -f /etc/apt/sources.list.d/typora.list ]; then
 
 fi
 
+if [ ! -f /etc/apt/sources.list.d/nodesource.list ]; then
+
+    wget -O - https://deb.nodesource.com/gpgkey/nodesource.gpg.key | sudo apt-key add - || exit 1
+    echo "deb https://deb.nodesource.com/node_8.x $DISTRIB_CODENAME main" | sudo tee /etc/apt/sources.list.d/nodesource.list >/dev/null || exit 1
+    echo "deb-src https://deb.nodesource.com/node_8.x $DISTRIB_CODENAME main" | sudo tee -a /etc/apt/sources.list.d/nodesource.list >/dev/null || exit 1
+
+fi
+
 if [ ! -f /etc/apt/sources.list.d/yarn.list ]; then
 
     wget -O - https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add - || exit 1
@@ -137,7 +145,6 @@ sudo apt-get -y install \
     meld \
     mysql-workbench \
     nodejs \
-    npm \
     openssh-server \
     owncloud-client \
     pandoc \
