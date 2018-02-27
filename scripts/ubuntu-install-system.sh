@@ -83,6 +83,13 @@ if [ ! -f /etc/apt/sources.list.d/typora.list ]; then
 
 fi
 
+if [ ! -f /etc/apt/sources.list.d/yarn.list ]; then
+
+    wget -O - https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add - || exit 1
+    echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list >/dev/null || exit 1
+
+fi
+
 if [ "$(cat /etc/apt/sources.list /etc/apt/sources.list.d/*.list)" != "$OLD_SOURCES" ]; then
 
     echo -e "Repositories have changed; running apt-get update...\n"
@@ -185,6 +192,7 @@ sudo apt-get -y install \
     vlc \
     whois \
     x11vnc \
+    yarn \
     || exit 1
 
 sudo adduser "$USER" vboxusers || exit 1
