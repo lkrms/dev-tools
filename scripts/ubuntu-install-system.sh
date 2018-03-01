@@ -123,6 +123,7 @@ sudo apt-get -y install \
     docker-compose \
     filezilla \
     firefox \
+    galculator \
     geany \
     ghostscript \
     ghostwriter \
