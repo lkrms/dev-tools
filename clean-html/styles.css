@@ -1,0 +1,22 @@
+#source, #target {
+
+    height: 400px;
+    width: 50%;
+    border: 1px solid #ccc;
+    overflow: auto;
+
+}
+
+#target {
+
+    display: none;
+
+}
+
+#output {
+
+    display: block;
+    height: 400px;
+    width: 50%;
+
+}

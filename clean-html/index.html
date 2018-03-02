@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Clean HTML</title>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="styles.css">
+<script src="jquery-3.3.1.min.js"></script>
+<script src="tidy.js"></script>
+<script>
+$(function () {
+
+    $("#convert").click(function () {
+
+        $("#target").empty();
+
+        $("#source").clone().contents().appendTo("#target");
+
+        var p = $("#target");
+
+        // matched elements are totally removed, including their children
+        p.find("style").remove();
+
+        // matched elements are removed from the tree, their children moved up to take their place
+        p.find("font, li p").each(function () {
+
+            $(this).replaceWith($(this).contents());
+
+        });
+
+        // matched elements are replaced with divs
+        p.find("p").each(function () {
+
+            $(this).replaceWith($("<div></div>").append($(this).contents()));
+
+        });
+
+        // matched elements (at the top level only) get a spacer inserted after them
+        p.children("div, p").each(function () {
+
+            $(this).after($("<div>&nbsp;</div>"))
+
+        });
+
+        // see http://api.html-tidy.org/tidy/quickref_5.6.0.html
+        var options = {
+            "indent":               "auto",
+            "indent-spaces":        2,
+            "wrap":                 120,
+            "break-before-br":      true,
+            "clean":                false,
+            "drop-empty-paras":     false,
+            "numeric-entities":     true,
+            "preserve-entities":    true,
+            "quote-marks":          true,
+            "show-body-only":       true,
+            "tidy-mark":            false
+        };
+
+        var output = tidy_html5(p.html(), options);
+
+        $("#output").val(output);
+
+    });
+
+});
+</script>
+</head>
+<body>
+<div id="source" contenteditable="true"></div>
+<div id="target" contenteditable="true"></div>
+<textarea id="output"></textarea>
+<button id="convert">Convert</button>
+</body>
+</html>
