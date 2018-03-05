@@ -205,7 +205,9 @@ sudo apt-get -y install \
 
 if dpkg -s deja-dup >/dev/null 2>&1; then
 
-    apt-get remove deja-dup
+    echo -e "Removing deja-dup...\n"
+
+    sudo apt-get -y remove deja-dup
 
 fi
 
