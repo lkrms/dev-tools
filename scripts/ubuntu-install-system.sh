@@ -203,6 +203,12 @@ sudo apt-get -y install \
     yarn \
     || exit 1
 
+if dpkg -s deja-dup >/dev/null 2>&1; then
+
+    apt-get remove deja-dup
+
+fi
+
 sudo adduser "$USER" vboxusers || exit 1
 sudo groupadd -f docker || exit 1
 sudo adduser "$USER" docker || exit 1
@@ -415,6 +421,9 @@ command -v kdiff3 >/dev/null 2>&1 || sudo ln -s /usr/bin/meld /usr/local/bin/kdi
 
 # on Ubuntu, move launcher to bottom
 gsettings set com.canonical.Unity.Launcher launcher-position Bottom
+
+# and disable automatic update checks (we do them manually often enough)
+gsettings set com.ubuntu.update-notifier no-show-notifications true
 
 echo -e "\n\nDone. You may also want to install: libpam-gnome-keyring (if this is a Lubuntu installation), unity-tweak-tool, compizconfig-settings-manager"
 
