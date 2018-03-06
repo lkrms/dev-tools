@@ -29,15 +29,22 @@ while read -d $'\0' FOLDER; do
 
     echo -e "Updating ${BOLD}${REPO_PATH}${NC} using Git..."
 
-    CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+    PULLS_FROM="$(git rev-parse --symbolic-full-name --abbrev-ref @{upstream} 2>/dev/null)"
+    PUSHES_TO="$(git rev-parse --symbolic-full-name --abbrev-ref @{push} 2>/dev/null)"
+    PUSHES_TO_REMOTE="${PUSHES_TO/%\/*/}"
+    PUSHES_TO_BRANCH="${PUSHES_TO/#*\//}"
 
-    if [ "$(git remote)" != "" ]; then
+    if [ "$PULLS_FROM" != "" ]; then
 
-        git pull
+        if [ "$1" != "offline" ]; then
+
+            git pull
+
+        fi
 
     else
 
-        echo -e "${RED}Warning: no remotes configured.${NC}"
+        echo -e "${RED}Warning: no upstream repository.${NC}"
 
     fi
 
@@ -47,22 +54,13 @@ while read -d $'\0' FOLDER; do
 
     fi
 
-    STALE_REMOTES=""
+    if [ "$PUSHES_TO" != "" ]; then
 
-    while read REMOTE; do
+        if ! git diff --quiet "$PUSHES_TO_REMOTE/$PUSHES_TO_BRANCH.." --; then
 
-        if ! git diff --quiet "$REMOTE/$CURRENT_BRANCH.." --; then
-
-            STALE_REMOTES+="${BLUE}$REMOTE${NC},"
+            STALE_REPOS+=" ${RED}${REPO_PATH}${NC}(${BLUE}${PUSHES_TO}${NC})"
 
         fi
-
-    done < <(git remote)
-
-    if [ "$STALE_REMOTES" != "" ]; then
-
-        STALE_REMOTES="${STALE_REMOTES/%,/}"
-        STALE_REPOS+=" ${RED}${REPO_PATH}${NC}(${STALE_REMOTES})"
 
     fi
 
