@@ -13,15 +13,34 @@ $(function () {
 
         $("#target").empty();
 
-        $("#source").clone().contents().appendTo("#target");
+        $("#source").clone().contents().filter(function () {
+
+            // keep element nodes and text nodes
+            return this.nodeType === 1 || this.nodeType === 3;
+
+        }).appendTo("#target");
 
         var p = $("#target");
 
+        // remove any nested comments or fragments that have survived the filter above
+        p.find("*").contents().filter(function () {
+
+            return !(this.nodeType === 1 || this.nodeType === 3);
+            
+        }).remove();
+
         // matched elements are totally removed, including their children
-        p.find("style").remove();
+        p.find("style, a[name]").remove();
+        p.find("div > br:only-child, p > br:only-child").parent().remove();
 
         // matched elements are removed from the tree, their children moved up to take their place
-        p.find("font, li p").each(function () {
+        p.find("font, li p, span[lang]").each(function () {
+
+            $(this).replaceWith($(this).contents());
+
+        });
+
+        p.children("div:only-child, p:only-child").each(function () {
 
             $(this).replaceWith($(this).contents());
 
