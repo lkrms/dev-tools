@@ -25,8 +25,8 @@ $(function () {
         // remove any nested comments or fragments that have survived the filter above
         p.find("*").contents().filter(function () {
 
-            return !(this.nodeType === 1 || this.nodeType === 3);
-            
+            return !(this.nodeType === 1 || this.nodeType === 3) || this.nodeName.match(/:/);
+
         }).remove();
 
         // matched elements are totally removed, including their children
