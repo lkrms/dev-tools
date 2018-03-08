@@ -34,7 +34,13 @@ $(function () {
         p.find("div > br:only-child, p > br:only-child").parent().remove();
 
         // matched elements are removed from the tree, their children moved up to take their place
-        p.find("font, li p, span[lang]").each(function () {
+        p.find("font, span[lang], span[style], li > p, a u").each(function () {
+
+            $(this).replaceWith($(this).contents());
+
+        });
+
+        p.find("u > a").parent().each(function () {
 
             $(this).replaceWith($(this).contents());
 
@@ -64,7 +70,7 @@ $(function () {
         var options = {
             "indent":               "auto",
             "indent-spaces":        2,
-            "wrap":                 120,
+            "wrap":                 0,
             "break-before-br":      true,
             "clean":                false,
             "drop-empty-paras":     false,
