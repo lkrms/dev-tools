@@ -9,40 +9,46 @@
 <script>
 $(function () {
 
+    function nodeFilter () {
+
+        // keep: element nodes and text nodes
+        // remove: comments, fragments, namespaced elements
+        return !(this.nodeType === 1 || this.nodeType === 3) || this.nodeName.match(/:/);
+
+    }
+
+    function whitespace () {
+
+        return $.parseHTML(" ");
+
+    }
+
     $("#convert").click(function () {
 
         $("#target").empty();
 
-        $("#source").clone().contents().filter(function () {
-
-            // keep element nodes and text nodes
-            return this.nodeType === 1 || this.nodeType === 3;
-
-        }).appendTo("#target");
+        $("#source").clone().contents().appendTo("#target");
 
         var p = $("#target");
 
-        // remove any nested comments or fragments that have survived the filter above
-        p.find("*").contents().filter(function () {
+        p.children().filter(nodeFilter).replaceWith(whitespace);
 
-            return !(this.nodeType === 1 || this.nodeType === 3) || this.nodeName.match(/:/);
-
-        }).remove();
+        p.find("*").contents().filter(nodeFilter).replaceWith(whitespace);
 
         // matched elements are totally removed, including their children
-        p.find("style, a[name]").remove();
-        p.find("div > br:only-child, p > br:only-child").parent().remove();
+        p.find("style, a[name]").replaceWith(whitespace);
+        p.find("div > br:only-child, p > br:only-child").parent().replaceWith(whitespace);
 
         // matched elements are removed from the tree, their children moved up to take their place
         p.find("font, span[lang], span[style], li > p, a u").each(function () {
 
-            $(this).replaceWith($(this).contents());
+            $(this).replaceWith($(this).contents().append(whitespace()).prepend(whitespace()));
 
         });
 
         p.find("u > a").parent().each(function () {
 
-            $(this).replaceWith($(this).contents());
+            $(this).replaceWith($(this).contents().append(whitespace()).prepend(whitespace()));
 
         });
 
@@ -73,6 +79,7 @@ $(function () {
             "wrap":                 0,
             "break-before-br":      true,
             "clean":                false,
+            "drop-empty-elements":  false,
             "drop-empty-paras":     false,
             "numeric-entities":     true,
             "preserve-entities":    true,
@@ -83,7 +90,7 @@ $(function () {
 
         var output = tidy_html5(p.html(), options);
 
-        $("#output").val(output);
+        $("#output").val(output.replace(/<([a-z0-9]+)><\/\1>/gi, " "));
 
     });
 
