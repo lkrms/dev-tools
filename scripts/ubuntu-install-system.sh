@@ -26,6 +26,7 @@ echo -e "Adding all required apt repositories...\n"
 
 OLD_SOURCES="$(cat /etc/apt/sources.list /etc/apt/sources.list.d/*.list)"
 
+cat /etc/apt/sources.list.d/*.list | grep -q 'alexlarsson/flatpak' || sudo add-apt-repository -y ppa:alexlarsson/flatpak || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'caffeine-developers/ppa' || sudo add-apt-repository -y ppa:caffeine-developers/ppa || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'linrunner/tlp' || sudo add-apt-repository -y ppa:linrunner/tlp || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'phoerious/keepassxc' || sudo add-apt-repository -y ppa:phoerious/keepassxc || exit 1
@@ -123,6 +124,7 @@ sudo apt-get -y install \
     docker-compose \
     filezilla \
     firefox \
+    flatpak \
     galculator \
     geany \
     ghostscript \
@@ -214,6 +216,9 @@ fi
 sudo adduser "$USER" vboxusers || exit 1
 sudo groupadd -f docker || exit 1
 sudo adduser "$USER" docker || exit 1
+
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install -y flathub org.baedert.corebird || exit 1
 
 pushd "$HOME/Downloads" >/dev/null
 
