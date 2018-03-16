@@ -66,7 +66,7 @@ while read -d $'\0' FOLDER; do
 
     echo -e "Done updating ${BOLD}${REPO_PATH}${NC}.\n\n"
 
-done < <(find "$SOURCE_PATH" -maxdepth 3 -type d -name .git -print0 | sort -z)
+done < <(find -L "$SOURCE_PATH" -maxdepth 3 -type d -name .git -print0 | sort -z)
 
 if [ "$CHANGED_REPOS" == "" ]; then
 
