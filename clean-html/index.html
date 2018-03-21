@@ -31,30 +31,81 @@ $(function () {
 
         var p = $("#target");
 
-        p.children().filter(nodeFilter).replaceWith(whitespace);
-
-        p.find("*").contents().filter(nodeFilter).replaceWith(whitespace);
+        // remove all nodes that aren't elements or text (e.g. comments)
+        p.contents().filter(nodeFilter).remove();
+        p.find("*").contents().filter(nodeFilter).remove();
 
         // matched elements are totally removed, including their children
-        p.find("style, a[name]").replaceWith(whitespace);
+        p.find("style").remove();
         p.find("div > br:only-child, p > br:only-child").parent().replaceWith(whitespace);
 
         // matched elements are removed from the tree, their children moved up to take their place
-        p.find("font, span[lang], span[style], li > p, a u").each(function () {
+        p.find("font, a[name], span[lang], span[style], li > p, a u").each(function () {
 
-            $(this).replaceWith($(this).contents().append(whitespace()).prepend(whitespace()));
+            $(this).replaceWith($(this).contents());
 
         });
 
-        p.find("u > a").parent().each(function () {
+        p.find("u > a:only-child").parent().each(function () {
 
-            $(this).replaceWith($(this).contents().append(whitespace()).prepend(whitespace()));
+            $(this).replaceWith($(this).contents());
 
         });
 
         p.children("div:only-child, p:only-child").each(function () {
 
             $(this).replaceWith($(this).contents());
+
+        });
+
+        // merge sibling lists
+        p.find("ul").each(function () {
+
+            if ($(this).prev().is("ul")) {
+
+                //$(this).prev().append($(this).children());
+                //$(this).remove();
+
+            }
+
+        });
+
+        // find inline elements that aren't so-called "void elements" and clean them up if they're empty or only contain whitespace
+        p.find(":not(area,base,br,col,embed,hr,img,input,keygen,link,meta,param,source,track,wbr)").filter(function () {
+
+            return $(this).css("display") == "inline";
+
+        }).each(function () {
+
+            if (this.innerHTML == "") {
+
+                $(this).remove();
+
+            } else if (this.innerHTML.trim() == "") {
+
+                $(this).replaceWith(whitespace);
+
+            }
+
+        });
+
+        // remove unnecessary non-breaking spaces
+        p.html(function (i, html) {
+
+            return html.replace(/&nbsp;/g, " ");
+
+        });
+
+        // matched elements (at the top level only) get a spacer inserted after them
+        p.children("div, p").each(function () {
+
+            if (! $(this).next().is("ul, ol")
+                && ! $(this).children().is("b:only-child, strong:only-child")
+                ) {
+
+               $(this).after($("<div>&nbsp;</div>"))
+
+            }
 
         });
 
@@ -65,10 +116,16 @@ $(function () {
 
         });
 
-        // matched elements (at the top level only) get a spacer inserted after them
-        p.children("div, p").each(function () {
+        // swap out <b> and <i> with <strong> and <em>
+        p.find("b").each(function () {
 
-            $(this).after($("<div>&nbsp;</div>"))
+            $(this).replaceWith($("<strong></strong>").append($(this).contents()));
+
+        });
+
+        p.find("i").each(function () {
+
+            $(this).replaceWith($("<em></em>").append($(this).contents()));
 
         });
 
@@ -90,7 +147,7 @@ $(function () {
 
         var output = tidy_html5(p.html(), options);
 
-        $("#output").val(output.replace(/<([a-z0-9]+)><\/\1>/gi, " "));
+        $("#output").val(output);
 
     });
 
