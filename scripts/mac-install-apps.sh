@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$(uname)" != "Darwin" ]; then
+if [ "$(uname -s)" != "Darwin" ]; then
 
     echo "Error: $(basename "$0") is not supported on this platform."
     exit 1

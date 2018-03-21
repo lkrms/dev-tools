@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$(uname)" != "Darwin" ]; then
+if [ "$(uname -s)" != "Darwin" ]; then
 
     echo "Error: $(basename "$0") is not supported on this platform."
     exit 1
@@ -30,7 +30,5 @@ if [ ! -e /usr/local/bin/pdflatex -a -e /Library/TeX/Root/bin/x86_64-darwin/pdfl
 
 fi
 
-# Uncomment if you need to mount ext4 volumes on your Mac:
-#brew cask install osxfuse
-#brew install ext4fuse
+echo -e "\n\nDone. If you need to mount ext4 volumes on your Mac, please also run: brew cask install osxfuse && brew install ext4fuse"
 

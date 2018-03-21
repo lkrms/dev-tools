@@ -18,7 +18,7 @@ command -v gs >/dev/null 2>&1 || { echo "Error: Ghostscript not found"; exit 1; 
 
 STAT_OPTIONS="-Lc %s"
 
-if [ "$(uname)" == "Darwin" ]; then
+if [ "$(uname -s)" == "Darwin" ]; then
 
     STAT_OPTIONS="-Lf %z"
 

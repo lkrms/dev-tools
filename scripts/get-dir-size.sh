@@ -2,7 +2,7 @@
 
 STAT_OPTIONS="-c %s"
 
-if [ "$(uname)" == "Darwin" ]; then
+if [ "$(uname -s)" == "Darwin" ]; then
 
     STAT_OPTIONS="-f %z"
 
