@@ -145,7 +145,8 @@ $(function () {
             "tidy-mark":            false
         };
 
-        var output = tidy_html5(p.html(), options);
+        // tidy_html5 strips line breaks, which means whitespace can be lost, so enforce whitespace
+        var output = tidy_html5(p.html().replace(/[\r\n]+/g, " "), options);
 
         $("#output").val(output);
 
