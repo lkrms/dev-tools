@@ -23,6 +23,8 @@ $(function () {
 
     }
 
+    var whiteColor = $("<div></div>").css("color", "#fff").css("color");
+
     $("#convert").click(function () {
 
         $("#target").empty();
@@ -31,13 +33,33 @@ $(function () {
 
         var p = $("#target");
 
-        // remove all nodes that aren't elements or text (e.g. comments)
+        // if the entire source was wrapped in a single block, move everything up
+        p.children("div:only-child, p:only-child").each(function () {
+
+            $(this).replaceWith($(this).contents());
+
+        });
+
+        // remove nodes that aren't elements or text (e.g. comments)
         p.contents().filter(nodeFilter).remove();
         p.find("*").contents().filter(nodeFilter).remove();
 
-        // matched elements are totally removed, including their children
+        // remove embedded CSS
         p.find("style").remove();
-        p.find("div > br:only-child, p > br:only-child").parent().replaceWith(whitespace);
+
+        // remove white-coloured text
+        p.find("*").filter(function () {
+
+            return $(this).css("color") == whiteColor;
+
+        }).replaceWith(whitespace);
+
+        // remove blocks with nothing but whitespace inside
+        p.find("div, p").filter(function () {
+
+            return $(this).text().trim() == "";
+
+        }).replaceWith(whitespace);
 
         // matched elements are removed from the tree, their children moved up to take their place
         p.find("font, a[name], span[lang], span[style], li > p, a u").each(function () {
@@ -46,13 +68,8 @@ $(function () {
 
         });
 
+        // remove superfluous underlines around links
         p.find("u > a:only-child").parent().each(function () {
-
-            $(this).replaceWith($(this).contents());
-
-        });
-
-        p.children("div:only-child, p:only-child").each(function () {
 
             $(this).replaceWith($(this).contents());
 
@@ -67,6 +84,13 @@ $(function () {
                 $(this).remove();
 
             }
+
+        });
+
+        // remove unnecessary non-breaking spaces
+        p.html(function (i, html) {
+
+            return html.replace(/&nbsp;/g, " ");
 
         });
 
@@ -89,18 +113,12 @@ $(function () {
 
         });
 
-        // remove unnecessary non-breaking spaces
-        p.html(function (i, html) {
-
-            return html.replace(/&nbsp;/g, " ");
-
-        });
-
         // matched elements (at the top level only) get a spacer inserted after them
         p.children("div, p").each(function () {
 
             if (! $(this).next().is("ul, ol")
-                && ! $(this).children().is("b:only-child, strong:only-child")
+                && ! $(this).prev().is("ul, ol")
+                && ! ($(this).children().is("b:only-child, strong:only-child, i:only-child, em:only-child") && $(this).children().text().trim() == $(this).text().trim())
                 ) {
 
                $(this).after($("<div>&nbsp;</div>"))
