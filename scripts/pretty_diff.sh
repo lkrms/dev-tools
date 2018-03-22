@@ -1,0 +1,5 @@
+#!/bin/bash
+
+/Applications/Xcode.app/Contents/Applications/FileMerge.app/Contents/MacOS/FileMerge -left "$1" -right "$2"
+
+
