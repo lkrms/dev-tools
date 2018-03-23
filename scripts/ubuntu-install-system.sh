@@ -109,14 +109,56 @@ fi
 
 echo -e "Installing everything you might need...\n"
 
+# see http://linrunner.de/en/tlp/docs/tlp-linux-advanced-power-management.html
 sudo apt-get -y install \
     acpi-call-dkms \
-    apache2 \
-    attr \
+    tlp \
+    tlp-rdw \
+    tp-smapi-dkms \
+    || exit 1
+
+# terminal utilities
+sudo apt-get -y install \
+    iotop \
+    powertop \
+    || exit 1
+
+# Pandoc
+sudo apt-get -y install \
+    pandoc \
+    texlive-fonts-recommended \
+    texlive-latex-recommended \
+    || exit 1
+
+# Scribus requires Ghostscript
+sudo apt-get -y install \
+    ghostscript \
+    scribus \
+    || exit 1
+
+# indicator-based apps
+sudo apt-get -y install \
     autokey-gtk \
     blueman \
-    build-essential \
     caffeine \
+    indicator-multiload \
+    || exit 1
+
+# needed for Db2 installation
+sudo apt-get -y install \
+    libpam0g:i386 \
+    || exit 1
+
+# needed for Cisco AnyConnect client
+sudo apt-get -y install \
+    lib32ncurses5 \
+    lib32z1 \
+    || exit 1
+
+sudo apt-get -y install \
+    apache2 \
+    attr \
+    build-essential \
     dconf-editor \
     debconf-utils \
     dkms \
@@ -127,21 +169,15 @@ sudo apt-get -y install \
     flatpak \
     galculator \
     geany \
-    ghostscript \
     ghostwriter \
     gimp \
     git \
     google-chrome-stable \
     heirloom-mailx \
     imagemagick \
-    indicator-multiload \
     inkscape \
-    iotop \
     keepassxc \
-    lib32ncurses5 \
-    lib32z1 \
     libapache2-mod-php \
-    libpam0g:i386 \
     libqt5script5 \
     libreoffice \
     mariadb-server \
@@ -150,7 +186,6 @@ sudo apt-get -y install \
     nodejs \
     openssh-server \
     owncloud-client \
-    pandoc \
     pdftk \
     php \
     php-bcmath \
@@ -170,7 +205,6 @@ sudo apt-get -y install \
     php-xdebug \
     php-xml \
     php-xmlrpc \
-    powertop \
     pv \
     python \
     python-dateutil \
@@ -181,18 +215,12 @@ sudo apt-get -y install \
     qtdeclarative5-dialogs-plugin \
     remmina \
     ruby \
-    scribus \
     shutter \
     speedcrunch \
     spotify-client \
     sublime-text \
     syslinux-utils \
-    texlive-fonts-recommended \
-    texlive-latex-recommended \
     thunderbird \
-    tlp \
-    tlp-rdw \
-    tp-smapi-dkms \
     traceroute \
     trickle \
     typora \
