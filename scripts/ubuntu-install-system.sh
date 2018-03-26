@@ -265,6 +265,12 @@ sudo dpkg -EGi *.deb || exit 1
 
 popd >/dev/null
 
+echo -e "Installing node-based packages...\n"
+sudo npm install -g jslint || exit 1
+
+# Sublime Text expects "jsl" to be on the path, so make it so
+command -v jsl >/dev/null 2>&1 || sudo ln -s /usr/bin/jslint /usr/local/bin/jsl
+
 echo -e "Disabling TeamViewer daemon...\n"
 
 sudo teamviewer daemon disable >/dev/null 2>&1
