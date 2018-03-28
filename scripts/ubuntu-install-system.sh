@@ -109,7 +109,15 @@ fi
 
 echo -e "Installing everything you might need...\n"
 
-# see http://linrunner.de/en/tlp/docs/tlp-linux-advanced-power-management.html
+# virtualisation
+sudo apt-get -y install \
+    dkms \
+    docker-ce \
+    docker-compose \
+    virtualbox-5.2 \
+    || exit 1
+
+# laptop power management; see http://linrunner.de/en/tlp/docs/tlp-linux-advanced-power-management.html
 sudo apt-get -y install \
     acpi-call-dkms \
     tlp \
@@ -117,10 +125,25 @@ sudo apt-get -y install \
     tp-smapi-dkms \
     || exit 1
 
-# terminal utilities
+# system / network / terminal utilities
 sudo apt-get -y install \
+    attr \
+    debconf-utils \
     iotop \
     powertop \
+    pv \
+    s-nail \
+    syslinux-utils \
+    traceroute \
+    trickle \
+    vim \
+    whois \
+    || exit 1
+
+# package / dependency managers
+sudo apt-get -y install \
+    flatpak \
+    yarn \
     || exit 1
 
 # Pandoc
@@ -130,10 +153,10 @@ sudo apt-get -y install \
     texlive-latex-recommended \
     || exit 1
 
-# Scribus requires Ghostscript
+# PDF manipulation
 sudo apt-get -y install \
     ghostscript \
-    scribus \
+    pdftk \
     || exit 1
 
 # indicator-based apps
@@ -142,6 +165,27 @@ sudo apt-get -y install \
     blueman \
     caffeine \
     indicator-multiload \
+    || exit 1
+
+# desktop essentials
+sudo apt-get -y install \
+    filezilla \
+    firefox \
+    galculator \
+    geany \
+    ghostwriter \
+    gimp \
+    google-chrome-stable \
+    inkscape \
+    keepassxc \
+    libreoffice \
+    owncloud-client \
+    scribus \
+    || exit 1
+
+# development
+sudo apt-get -y install \
+    mysql-workbench \
     || exit 1
 
 # needed for Db2 installation
@@ -157,36 +201,14 @@ sudo apt-get -y install \
 
 sudo apt-get -y install \
     apache2 \
-    attr \
     build-essential \
     dconf-editor \
-    debconf-utils \
-    dkms \
-    docker-ce \
-    docker-compose \
-    filezilla \
-    firefox \
-    flatpak \
-    galculator \
-    geany \
-    ghostwriter \
-    gimp \
     git \
-    google-chrome-stable \
-    heirloom-mailx \
-    imagemagick \
-    inkscape \
-    keepassxc \
     libapache2-mod-php \
-    libqt5script5 \
-    libreoffice \
     mariadb-server \
     meld \
-    mysql-workbench \
     nodejs \
     openssh-server \
-    owncloud-client \
-    pdftk \
     php \
     php-bcmath \
     php-cli \
@@ -205,7 +227,6 @@ sudo apt-get -y install \
     php-xdebug \
     php-xml \
     php-xmlrpc \
-    pv \
     python \
     python-dateutil \
     python-dev \
@@ -219,18 +240,11 @@ sudo apt-get -y install \
     speedcrunch \
     spotify-client \
     sublime-text \
-    syslinux-utils \
     thunderbird \
-    traceroute \
-    trickle \
     typora \
     usb-creator-gtk \
-    vim \
-    virtualbox-5.2 \
     vlc \
-    whois \
     x11vnc \
-    yarn \
     || exit 1
 
 if dpkg -s deja-dup >/dev/null 2>&1; then
