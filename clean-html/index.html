@@ -109,6 +109,11 @@ $(function () {
 
                 $(this).replaceWith(whitespace);
 
+            } else if (this.innerHTML.match(/^[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,\-.\/:;<=>?@\[\]^_`{|}~ \f\n\r\t\v\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+$/)) {
+
+                // replace inline elements that only contain punctuation and/or whitespace with their contents
+                $(this).replaceWith($(this).contents());
+
             }
 
         });
@@ -156,7 +161,7 @@ $(function () {
             "clean":                false,
             "drop-empty-elements":  false,
             "drop-empty-paras":     false,
-            "numeric-entities":     true,
+            "numeric-entities":     false,
             "preserve-entities":    true,
             "quote-marks":          true,
             "show-body-only":       true,
@@ -166,7 +171,8 @@ $(function () {
         // tidy_html5 strips line breaks, which means whitespace can be lost, so enforce whitespace
         var output = tidy_html5(p.html().replace(/[\r\n]+/g, " "), options);
 
-        $("#output").val(output);
+        // replace commonly-used "curly quotes" with their corresponding entities
+        $("#output").val(output.replace(/\u201C/g, "&ldquo;").replace(/\u201D/g, "&rdquo;").replace(/\u2018/g, "&lsquo;").replace(/\u2019/g, "&rsquo;"));
 
     });
 
