@@ -117,6 +117,10 @@ sudo apt-get -y install \
     virtualbox-5.2 \
     || exit 1
 
+sudo adduser "$USER" vboxusers || exit 1
+sudo groupadd -f docker || exit 1
+sudo adduser "$USER" docker || exit 1
+
 # laptop power management; see http://linrunner.de/en/tlp/docs/tlp-linux-advanced-power-management.html
 sudo apt-get -y install \
     acpi-call-dkms \
@@ -130,6 +134,7 @@ sudo apt-get -y install \
     attr \
     debconf-utils \
     iotop \
+    openssh-server \
     powertop \
     pv \
     s-nail \
@@ -145,6 +150,8 @@ sudo apt-get -y install \
     flatpak \
     yarn \
     || exit 1
+
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
 # Pandoc
 sudo apt-get -y install \
@@ -165,6 +172,16 @@ sudo apt-get -y install \
     blueman \
     caffeine \
     indicator-multiload \
+    shutter \
+    || exit 1
+
+# utility apps
+sudo apt-get -y install \
+    dconf-editor \
+    remmina \
+    speedcrunch \
+    usb-creator-gtk \
+    x11vnc \
     || exit 1
 
 # desktop essentials
@@ -181,34 +198,17 @@ sudo apt-get -y install \
     libreoffice \
     owncloud-client \
     scribus \
+    spotify-client \
+    thunderbird \
+    typora \
+    vlc \
     || exit 1
 
 # development
 sudo apt-get -y install \
-    mysql-workbench \
-    || exit 1
-
-# needed for Db2 installation
-sudo apt-get -y install \
-    libpam0g:i386 \
-    || exit 1
-
-# needed for Cisco AnyConnect client
-sudo apt-get -y install \
-    lib32ncurses5 \
-    lib32z1 \
-    || exit 1
-
-sudo apt-get -y install \
-    apache2 \
     build-essential \
-    dconf-editor \
     git \
-    libapache2-mod-php \
-    mariadb-server \
-    meld \
     nodejs \
-    openssh-server \
     php \
     php-bcmath \
     php-cli \
@@ -232,19 +232,38 @@ sudo apt-get -y install \
     python-dev \
     python-mysqldb \
     python-requests \
+    ruby \
+    || exit 1
+
+# services for development
+sudo apt-get -y install \
+    apache2 \
+    libapache2-mod-php \
+    mariadb-server \
+    || exit 1
+
+# desktop apps for development
+sudo apt-get -y install \
+    meld \
+    mysql-workbench \
+    sublime-text \
+    || exit 1
+
+# needed for Db2 installation
+sudo apt-get -y install \
+    libpam0g:i386 \
+    || exit 1
+
+# needed for Cisco AnyConnect client
+sudo apt-get -y install \
+    lib32ncurses5 \
+    lib32z1 \
+    || exit 1
+
+# needed for TeamViewer
+sudo apt-get -y install \
     qtdeclarative5-controls-plugin \
     qtdeclarative5-dialogs-plugin \
-    remmina \
-    ruby \
-    shutter \
-    speedcrunch \
-    spotify-client \
-    sublime-text \
-    thunderbird \
-    typora \
-    usb-creator-gtk \
-    vlc \
-    x11vnc \
     || exit 1
 
 if dpkg -s deja-dup >/dev/null 2>&1; then
@@ -255,18 +274,11 @@ if dpkg -s deja-dup >/dev/null 2>&1; then
 
 fi
 
-sudo adduser "$USER" vboxusers || exit 1
-sudo groupadd -f docker || exit 1
-sudo adduser "$USER" docker || exit 1
-
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak install -y flathub org.baedert.corebird || exit 1
-
 mkdir -p "$HOME/Downloads/install" || exit 1
 
 pushd "$HOME/Downloads/install" >/dev/null
 
-wget -c http://get.code-industry.net/public/master-pdf-editor-4.3.82_qt5.amd64.deb || exit 1
+wget -c http://get.code-industry.net/public/master-pdf-editor-4.3.89_qt5.amd64.deb || exit 1
 wget -c https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
 wget -c https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
 wget -c https://downloads.slack-edge.com/linux_releases/slack-desktop-3.1.0-amd64.deb || exit 1
@@ -279,15 +291,17 @@ sudo dpkg -EGi *.deb || exit 1
 
 popd >/dev/null
 
-echo -e "Installing node-based packages...\n"
+echo -e "Disabling TeamViewer daemon...\n"
+sudo teamviewer daemon disable >/dev/null 2>&1
+
+echo -e "Installing npm packages...\n"
 sudo npm install -g jslint || exit 1
 
 # Sublime Text expects "jsl" to be on the path, so make it so
 command -v jsl >/dev/null 2>&1 || sudo ln -s /usr/bin/jslint /usr/local/bin/jsl
 
-echo -e "Disabling TeamViewer daemon...\n"
-
-sudo teamviewer daemon disable >/dev/null 2>&1
+echo -e "Installing flatpack packages...\n"
+flatpak install -y flathub org.baedert.corebird || exit 1
 
 echo -e "Configuring MariaDB (MySQL)...\n"
 
