@@ -31,6 +31,7 @@ cat /etc/apt/sources.list.d/*.list | grep -q 'caffeine-developers/ppa' || sudo a
 cat /etc/apt/sources.list.d/*.list | grep -q 'linrunner/tlp' || sudo add-apt-repository -y ppa:linrunner/tlp || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'phoerious/keepassxc' || sudo add-apt-repository -y ppa:phoerious/keepassxc || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'scribus/ppa' || sudo add-apt-repository -y ppa:scribus/ppa || exit 1
+cat /etc/apt/sources.list.d/*.list | grep -q 'stebbins/handbrake-releases' || sudo add-apt-repository -y ppa:stebbins/handbrake-releases || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'wereturtle/ppa' || sudo add-apt-repository -y ppa:wereturtle/ppa || exit 1
 
 cat /etc/apt/sources.list | grep -q '^deb .*'"$DISTRIB_CODENAME"'.*partner' || sudo add-apt-repository -y "deb http://archive.canonical.com/ubuntu $DISTRIB_CODENAME partner"
@@ -193,6 +194,7 @@ sudo apt-get -y install \
     ghostwriter \
     gimp \
     google-chrome-stable \
+    handbrake \
     inkscape \
     keepassxc \
     libdvd-pkg \
