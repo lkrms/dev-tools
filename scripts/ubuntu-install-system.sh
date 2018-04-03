@@ -195,6 +195,7 @@ sudo apt-get -y install \
     google-chrome-stable \
     inkscape \
     keepassxc \
+    libdvd-pkg \
     libreoffice \
     owncloud-client \
     scribus \
@@ -247,6 +248,18 @@ sudo apt-get -y install \
     meld \
     mysql-workbench \
     sublime-text \
+    || exit 1
+
+# needed for MakeMKV (see: http://www.makemkv.com/forum2/viewtopic.php?f=3&t=224)
+sudo apt-get -y install \
+    pkg-config \
+    libc6-dev \
+    libssl-dev \
+    libexpat1-dev \
+    libavcodec-dev \
+    libgl1-mesa-dev \
+    libqt4-dev \
+    zlib1g-dev \
     || exit 1
 
 # needed for Db2 installation
@@ -499,6 +512,8 @@ gsettings set com.ubuntu.update-notifier no-show-notifications true
 echo -e "\n\nDone. You may also want to install: libpam-gnome-keyring (if this is a Lubuntu installation), unity-tweak-tool, compizconfig-settings-manager"
 
 echo -e "\n\nPlanning to work with Docker and Dory? Consider adding a '#' before 'dns=dnsmasq' in /etc/NetworkManager/NetworkManager.conf, disable Apache with 'systemctl disable apache2.service', and reboot."
+
+echo -e "\n\nTo complete the installation of libdvdcss, you may need to run: dpkg-reconfigure libdvd-pkg"
 
 echo -e "\n\n"
 
