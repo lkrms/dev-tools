@@ -114,6 +114,15 @@ $(function () {
                 // replace inline elements that only contain punctuation and/or whitespace with their contents
                 $(this).replaceWith($(this).contents());
 
+            } else {
+
+                // protect leading whitespace from tidy_html5 (trailing seems to be safe)
+                if (this.innerHTML.match(/^\s/)) {
+
+                    $(this).before(whitespace);
+
+                }
+
             }
 
         });
