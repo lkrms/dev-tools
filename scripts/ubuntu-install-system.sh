@@ -194,7 +194,7 @@ sudo apt-get -y install \
     ghostwriter \
     gimp \
     google-chrome-stable \
-    handbrake \
+    handbrake-gtk \
     inkscape \
     keepassxc \
     libdvd-pkg \
