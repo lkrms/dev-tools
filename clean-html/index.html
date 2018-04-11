@@ -76,9 +76,9 @@ $(function () {
         });
 
         // merge sibling lists
-        p.find("ul").each(function () {
+        p.find("ul, ol").each(function () {
 
-            if ($(this).prev().is("ul")) {
+            if (($(this).is("ul") && $(this).prev().is("ul")) || ($(this).is("ol") && $(this).prev().is("ol"))) {
 
                 $(this).prev().append($(this).children());
                 $(this).remove();
@@ -126,6 +126,22 @@ $(function () {
             }
 
         });
+
+        // replace headings with <div><strong>
+        p.find("h1, h2, h3, h4, h5, h6").each(function () {
+
+            var div = $("<div><strong></strong></div>");
+
+            div.children().first().append($(this).contents());
+
+            $(this).replaceWith(div);
+
+        });
+
+        // clear any remaining unwanted attributes
+        p.find("[class]").removeAttr("class");
+        p.find("[style]").removeAttr("style");
+        p.find("[lang]").removeAttr("lang");
 
         // matched elements (at the top level only) get a spacer inserted after them
         p.children("div, p").each(function () {
