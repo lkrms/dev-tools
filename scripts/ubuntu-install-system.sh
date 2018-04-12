@@ -303,6 +303,7 @@ wget -c https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || e
 wget -c https://downloads.slack-edge.com/linux_releases/slack-desktop-3.1.0-amd64.deb || exit 1
 wget -c https://github.com/aluxian/Messenger-for-Desktop/releases/download/v2.0.9/messengerfordesktop-2.0.9-linux-amd64.deb || exit 1
 wget -c https://github.com/hluk/CopyQ/releases/download/v3.1.1/copyq_3.1.1_Ubuntu_16.04-1_amd64.deb || exit 1
+wget -c https://github.com/ivelkov/teams-for-linux/releases/download/v0.0.7/teams-for-linux_0.0.7_amd64.deb || exit 1
 wget -c https://go.skype.com/skypeforlinux-64.deb || exit 1
 wget -c https://release.gitkraken.com/linux/gitkraken-amd64.deb || exit 1
 
