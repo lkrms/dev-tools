@@ -87,8 +87,6 @@ function process_file {
 
     fi
 
-    exit
-
 }
 
 SOURCE_PATH="$(sanitise_path "$SOURCE_PATH")"
