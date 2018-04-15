@@ -81,6 +81,13 @@ if [ ! -f /etc/apt/sources.list.d/spotify.list ]; then
 
 fi
 
+if [ ! -f /etc/apt/sources.list.d/mkvtoolnix.list ]; then
+
+    wget -O - https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt | sudo apt-key add - || exit 1
+    echo "deb https://mkvtoolnix.download/ubuntu/ $DISTRIB_CODENAME main" | sudo tee /etc/apt/sources.list.d/mkvtoolnix.list >/dev/null || exit 1
+
+fi
+
 if [ ! -f /etc/apt/sources.list.d/typora.list ]; then
 
     sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BA300B7755AFCFAE || exit 1
@@ -203,6 +210,8 @@ sudo apt-get -y install \
     keepassxc \
     libdvd-pkg \
     libreoffice \
+    mkvtoolnix \
+    mkvtoolnix-gui \
     owncloud-client \
     scribus \
     spotify-client \
