@@ -3,7 +3,7 @@
 SOURCE_PATH="/Volumes/shared/rips"
 ARCHIVE_PATH="/Volumes/shared/rips/__converted"
 TARGET_PATH="/Volumes/Data/HandBrake"
-HANDBRAKE_COMMAND="HandBrakeCLI"
+HANDBRAKE_PATH="/usr/local/bin/HandBrakeCLI"
 HANDBRAKE_PRESET="DVD (fast) + Subtitles"
 
 if [ ! -d "$SOURCE_PATH" ]; then
@@ -27,7 +27,12 @@ if [ ! -d "$TARGET_PATH" ]; then
 
 fi
 
-command -v "$HANDBRAKE_COMMAND" >/dev/null 2>&1 || { echo "Error: HandBrake CLI not found."; exit 1; }
+if [ ! -x "$HANDBRAKE_PATH" ]; then
+
+    echo "Error: $HANDBRAKE_PATH does not exist or is not executable."
+    exit 1
+
+fi
 
 function log_something {
 
@@ -65,7 +70,7 @@ function process_file {
 
     log_something "Encoding: $1"
 
-    "$HANDBRAKE_COMMAND" --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --output "$TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2)
+    "$HANDBRAKE_PATH" --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --output "$TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) </dev/null
 
     HANDBRAKE_RESULT=$?
 
