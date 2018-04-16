@@ -146,6 +146,7 @@ sudo apt-get -y install \
     debconf-utils \
     hwinfo \
     iotop \
+    nethogs \
     openssh-server \
     powertop \
     pv \
