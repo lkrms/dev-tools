@@ -307,15 +307,20 @@ mkdir -p "$HOME/Downloads/install" || exit 1
 
 pushd "$HOME/Downloads/install" >/dev/null
 
-wget -c http://get.code-industry.net/public/master-pdf-editor-4.3.89_qt5.amd64.deb || exit 1
-wget -c https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
-wget -c https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
-wget -c https://downloads.slack-edge.com/linux_releases/slack-desktop-3.1.0-amd64.deb || exit 1
-wget -c https://github.com/aluxian/Messenger-for-Desktop/releases/download/v2.0.9/messengerfordesktop-2.0.9-linux-amd64.deb || exit 1
-wget -c https://github.com/hluk/CopyQ/releases/download/v3.1.1/copyq_3.1.1_Ubuntu_16.04-1_amd64.deb || exit 1
-wget -c https://github.com/ivelkov/teams-for-linux/releases/download/v0.0.7/teams-for-linux_0.0.7_amd64.deb || exit 1
-wget -c https://go.skype.com/skypeforlinux-64.deb || exit 1
-wget -c https://release.gitkraken.com/linux/gitkraken-amd64.deb || exit 1
+# delete package files more than 24 hours old
+find . -maxdepth 1 -type f -name '*.deb' -mtime +1 -delete
+
+wget -c --no-use-server-timestamps http://get.code-industry.net/public/master-pdf-editor-4.3.89_qt5.amd64.deb || exit 1
+wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
+wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
+wget -c --no-use-server-timestamps https://downloads.slack-edge.com/linux_releases/slack-desktop-3.1.1-amd64.deb || exit 1
+wget -c --no-use-server-timestamps https://getrambox.herokuapp.com/download/linux_64?filetype=deb || exit 1
+wget -c --no-use-server-timestamps https://github.com/hluk/CopyQ/releases/download/v3.1.1/copyq_3.1.1_Ubuntu_16.04-1_amd64.deb || exit 1
+wget -c --no-use-server-timestamps https://go.skype.com/skypeforlinux-64.deb || exit 1
+wget -c --no-use-server-timestamps https://release.gitkraken.com/linux/gitkraken-amd64.deb || exit 1
+
+# delete apps that may have been installed previously
+sudo apt-get -y remove messengerfordesktop teams-for-linux
 
 sudo dpkg -EGi *.deb || exit 1
 
