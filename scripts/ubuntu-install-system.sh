@@ -321,7 +321,21 @@ wget -c --no-use-server-timestamps https://go.skype.com/skypeforlinux-64.deb || 
 wget -c --no-use-server-timestamps https://release.gitkraken.com/linux/gitkraken-amd64.deb || exit 1
 
 # delete apps that may have been installed previously
-sudo apt-get -y remove messengerfordesktop teams-for-linux
+if dpkg -s messengerfordesktop >/dev/null 2>&1; then
+
+    echo -e "Removing messengerfordesktop...\n"
+
+    sudo apt-get -y remove messengerfordesktop
+
+fi
+
+if dpkg -s teams-for-linux >/dev/null 2>&1; then
+
+    echo -e "Removing teams-for-linux...\n"
+
+    sudo apt-get -y remove teams-for-linux
+
+fi
 
 sudo dpkg -EGi *.deb || exit 1
 
