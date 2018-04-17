@@ -206,6 +206,7 @@ sudo apt-get -y install \
     ghostwriter \
     gimp \
     google-chrome-stable \
+    handbrake-cli \
     handbrake-gtk \
     inkscape \
     keepassxc \
@@ -314,7 +315,7 @@ wget -c --no-use-server-timestamps http://get.code-industry.net/public/master-pd
 wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://downloads.slack-edge.com/linux_releases/slack-desktop-3.1.1-amd64.deb || exit 1
-wget -c --no-use-server-timestamps https://getrambox.herokuapp.com/download/linux_64?filetype=deb || exit 1
+wget -c --no-use-server-timestamps --content-disposition https://getrambox.herokuapp.com/download/linux_64?filetype=deb || exit 1
 wget -c --no-use-server-timestamps https://github.com/hluk/CopyQ/releases/download/v3.1.1/copyq_3.1.1_Ubuntu_16.04-1_amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://go.skype.com/skypeforlinux-64.deb || exit 1
 wget -c --no-use-server-timestamps https://release.gitkraken.com/linux/gitkraken-amd64.deb || exit 1
