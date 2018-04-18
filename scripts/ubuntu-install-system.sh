@@ -9,6 +9,13 @@ fi
 
 . /etc/lsb-release || exit 2
 
+if [ "$DISTRIB_ID" != "Ubuntu" ]; then
+
+    echo "Error: $(basename "$0") is not supported on this distribution."
+    exit 1
+
+fi
+
 echo -e "Upgrading everything that's currently installed...\n"
 
 sudo apt-get update || exit 1
@@ -36,6 +43,12 @@ cat /etc/apt/sources.list.d/*.list | grep -q 'stebbins/handbrake-releases' || su
 
 # Ghostwriter
 cat /etc/apt/sources.list.d/*.list | grep -q 'wereturtle/ppa' || sudo add-apt-repository -y ppa:wereturtle/ppa || exit 1
+
+if [ "$DISTRIB_CODENAME" != "xenial" ]; then
+
+    cat /etc/apt/sources.list.d/*.list | grep -q 'hluk/copyq' || sudo add-apt-repository -y ppa:hluk/copyq || exit 1
+
+fi
 
 cat /etc/apt/sources.list | grep -q '^deb .*'"$DISTRIB_CODENAME"'.*partner' || sudo add-apt-repository -y "deb http://archive.canonical.com/ubuntu $DISTRIB_CODENAME partner"
 
@@ -122,7 +135,6 @@ echo -e "Installing everything you might need...\n"
 
 # virtualisation
 sudo apt-get -y install \
-    dkms \
     docker-ce \
     docker-compose \
     virtualbox-5.2 \
@@ -135,6 +147,7 @@ sudo adduser "$USER" docker || exit 1
 # laptop power management; see http://linrunner.de/en/tlp/docs/tlp-linux-advanced-power-management.html
 sudo apt-get -y install \
     acpi-call-dkms \
+    dkms \
     tlp \
     tlp-rdw \
     tp-smapi-dkms \
@@ -187,6 +200,14 @@ sudo apt-get -y install \
     indicator-multiload \
     shutter \
     || exit 1
+
+if [ "$DISTRIB_CODENAME" != "xenial" ]; then
+
+    sudo apt-get -y install \
+        copyq \
+        || exit 1
+
+fi
 
 # utility apps
 sudo apt-get -y install \
@@ -300,7 +321,7 @@ if dpkg -s deja-dup >/dev/null 2>&1; then
 
     echo -e "Removing deja-dup...\n"
 
-    sudo apt-get -y remove deja-dup
+    sudo apt-get -y purge deja-dup
 
 fi
 
@@ -315,17 +336,22 @@ wget -c --no-use-server-timestamps http://get.code-industry.net/public/master-pd
 wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://downloads.slack-edge.com/linux_releases/slack-desktop-3.1.1-amd64.deb || exit 1
-wget -c --no-use-server-timestamps https://github.com/hluk/CopyQ/releases/download/v3.1.1/copyq_3.1.1_Ubuntu_16.04-1_amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://github.com/saenzramiro/rambox/releases/download/0.5.16/Rambox_0.5.16-x64.deb || exit 1
 wget -c --no-use-server-timestamps https://go.skype.com/skypeforlinux-64.deb || exit 1
 wget -c --no-use-server-timestamps https://release.gitkraken.com/linux/gitkraken-amd64.deb || exit 1
+
+if [ "$DISTRIB_CODENAME" == "xenial" ]; then
+
+    wget -c --no-use-server-timestamps https://github.com/hluk/CopyQ/releases/download/v3.1.1/copyq_3.1.1_Ubuntu_16.04-1_amd64.deb || exit 1
+
+fi
 
 # delete apps that may have been installed previously
 if dpkg -s messengerfordesktop >/dev/null 2>&1; then
 
     echo -e "Removing messengerfordesktop...\n"
 
-    sudo apt-get -y remove messengerfordesktop
+    sudo apt-get -y purge messengerfordesktop
 
 fi
 
@@ -333,7 +359,7 @@ if dpkg -s teams-for-linux >/dev/null 2>&1; then
 
     echo -e "Removing teams-for-linux...\n"
 
-    sudo apt-get -y remove teams-for-linux
+    sudo apt-get -y purge teams-for-linux
 
 fi
 
