@@ -341,8 +341,8 @@ sudo dpkg -EGi *.deb || exit 1
 
 popd >/dev/null
 
-echo -e "Disabling TeamViewer daemon...\n"
-sudo teamviewer daemon disable >/dev/null 2>&1
+#echo -e "Disabling TeamViewer daemon...\n"
+#sudo teamviewer daemon disable >/dev/null 2>&1
 
 echo -e "Installing npm packages...\n"
 sudo npm install -g jslint || exit 1
