@@ -82,19 +82,25 @@ function process_file {
 
     log_something "Finished encoding (exit code $HANDBRAKE_RESULT): $1"
 
-    if [ "$HANDBRAKE_RESULT" -eq "0" -a -z "$2" ]; then
+    if [ "$HANDBRAKE_RESULT" -eq "0" ]; then
 
-        ARCHIVE_FILE="$(sanitise_path "$ARCHIVE_PATH/$SOURCE_FOLDER/$(basename "$1")")"
+        rm "$HANDBRAKE_LOG_FILE_STDOUT"
 
-        mkdir -p "$(dirname "$ARCHIVE_FILE")" || exit 2
+        if [ -z "$2" ]; then
 
-        log_something "Moving: $1 to $ARCHIVE_FILE"
+            ARCHIVE_FILE="$(sanitise_path "$ARCHIVE_PATH/$SOURCE_FOLDER/$(basename "$1")")"
 
-        mv -n "$1" "$ARCHIVE_FILE"
+            mkdir -p "$(dirname "$ARCHIVE_FILE")" || exit 2
 
-        MOVE_RESULT=$?
+            log_something "Moving: $1 to $ARCHIVE_FILE"
 
-        log_something "Move exit code: $MOVE_RESULT"
+            mv -n "$1" "$ARCHIVE_FILE"
+
+            MOVE_RESULT=$?
+
+            log_something "Move exit code: $MOVE_RESULT"
+
+        fi
 
     fi
 
