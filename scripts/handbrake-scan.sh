@@ -13,7 +13,7 @@ while read -d $'\0' DVD_SOURCE; do
 
     echo "Scanning: $DVD_SOURCE"
 
-    "$HANDBRAKE_PATH" --scan --title 0 --input "$DVD_SOURCE" >"$DVD_SOURCE.handbrake-scan" 2>&1 </dev/null
+    "$HANDBRAKE_PATH" --scan --title 0 --input "$DVD_SOURCE" </dev/null 2>&1 | grep '^[[:space:]]*+' >"$DVD_SOURCE.handbrake-scan"
 
     HANDBRAKE_RESULT=$?
 
