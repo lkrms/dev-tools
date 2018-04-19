@@ -106,6 +106,12 @@ function process_file {
 
 }
 
+function process_dvd {
+
+    echo "Processing DVD $1 (title $2) to $3"
+
+}
+
 SOURCE_PATH="$(sanitise_path "$SOURCE_PATH")"
 ARCHIVE_PATH="$(sanitise_path "$ARCHIVE_PATH")"
 TARGET_PATH="$(sanitise_path "$TARGET_PATH")"
@@ -153,6 +159,22 @@ while read -d $'\0' FOLDER; do
         process_file "$SOURCE_FILE" "${SERIES_NAME}${SEASON_NAME}_E$(printf "%02d" $EPISODE)"
 
     done < <(find "$FOLDER" -maxdepth 1 -type f -name '*.mkv' ! -iname '* - Side *' -print0 | sort -z)
+
+    if [ -e "$FOLDER/titles.list" ]; then
+
+        while IFS=',' read -r DVD_SOURCE DVD_TITLE; do
+
+            let EPISODE=EPISODE+1
+
+            if [ -e "$FOLDER/$DVD_SOURCE" -a ! -z "$DVD_TITLE" ]; then
+
+                process_dvd "$FOLDER/$DVD_SOURCE" "$DVD_TITLE" "${SERIES_NAME}${SEASON_NAME}_E$(printf "%02d" $EPISODE)"
+
+            fi
+
+        done < "$FOLDER/titles.list"
+
+    fi
 
 done < <(find "$SOURCE_PATH" -mindepth 1 -maxdepth 2 -type d ! -path '*/__*' -print0 | sort -z)
 
