@@ -108,7 +108,60 @@ function process_file {
 
 function process_dvd {
 
-    echo "Processing DVD $1 (title $2) to $3"
+    SOURCE_FOLDER="$(dirname "$1")"
+    SOURCE_FOLDER="${SOURCE_FOLDER/#$SOURCE_PATH/}"
+    SOURCE_FOLDER="${SOURCE_FOLDER/#\//}"
+    SOURCE_NAME="$(basename "$1")"
+    SOURCE_NAME="${SOURCE_NAME/%.iso/}"
+
+    if [ -n "$3" ]; then
+
+        SOURCE_NAME="$3"
+
+    fi
+
+    TARGET_FILE="$(sanitise_path "$TARGET_PATH/$SOURCE_FOLDER/$SOURCE_NAME.m4v")"
+    HANDBRAKE_LOG_FILE="$LOG_FILE_BASE.${1//\//-}.$2.log"
+    HANDBRAKE_LOG_FILE_STDOUT="$LOG_FILE_BASE.${1//\//-}.$2.stdout.log"
+
+    if [ -e "$TARGET_FILE" ]; then
+
+        echo log_something "Target exists (skipping): $TARGET_FILE"
+        return 1
+
+    fi
+
+    echo mkdir -p "$(dirname "$TARGET_FILE")" || exit 2
+
+    echo log_something "Encoding: $1 (title $2) to $TARGET_FILE"
+
+    echo "$HANDBRAKE_PATH" --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --title "$2" --output "$TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) </dev/null
+
+    HANDBRAKE_RESULT=$?
+
+    echo log_something "Finished encoding (exit code $HANDBRAKE_RESULT): $1"
+
+    if [ "$HANDBRAKE_RESULT" -eq "0" ]; then
+
+        echo rm "$HANDBRAKE_LOG_FILE_STDOUT"
+
+        if [ -z "$3" ]; then
+
+            ARCHIVE_FILE="$(sanitise_path "$ARCHIVE_PATH/$SOURCE_FOLDER/$(basename "$1")")"
+
+            echo mkdir -p "$(dirname "$ARCHIVE_FILE")" || exit 2
+
+            echo log_something "Moving: $1 to $ARCHIVE_FILE"
+
+            echo mv -n "$1" "$ARCHIVE_FILE"
+
+            MOVE_RESULT=$?
+
+            echo log_something "Move exit code: $MOVE_RESULT"
+
+        fi
+
+    fi
 
 }
 
@@ -166,7 +219,7 @@ while read -d $'\0' FOLDER; do
 
             let EPISODE=EPISODE+1
 
-            if [ -e "$FOLDER/$DVD_SOURCE" -a ! -z "$DVD_TITLE" ]; then
+            if [ ! -z "$DVD_SOURCE" -a -e "$FOLDER/$DVD_SOURCE" -a ! -z "$DVD_TITLE" ]; then
 
                 process_dvd "$FOLDER/$DVD_SOURCE" "$DVD_TITLE" "${SERIES_NAME}${SEASON_NAME}_E$(printf "%02d" $EPISODE)"
 
