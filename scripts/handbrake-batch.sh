@@ -126,38 +126,38 @@ function process_dvd {
 
     if [ -e "$TARGET_FILE" ]; then
 
-        echo log_something "Target exists (skipping): $TARGET_FILE"
+        log_something "Target exists (skipping): $TARGET_FILE"
         return 1
 
     fi
 
-    echo mkdir -p "$(dirname "$TARGET_FILE")" || exit 2
+    mkdir -p "$(dirname "$TARGET_FILE")" || exit 2
 
-    echo log_something "Encoding: $1 (title $2) to $TARGET_FILE"
+    log_something "Encoding: $1 (title $2) to $TARGET_FILE"
 
-    echo "$HANDBRAKE_PATH" --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --title "$2" --output "$TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) </dev/null
+    "$HANDBRAKE_PATH" --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --title "$2" --output "$TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) </dev/null
 
     HANDBRAKE_RESULT=$?
 
-    echo log_something "Finished encoding (exit code $HANDBRAKE_RESULT): $1"
+    log_something "Finished encoding (exit code $HANDBRAKE_RESULT): $1"
 
     if [ "$HANDBRAKE_RESULT" -eq "0" ]; then
 
-        echo rm "$HANDBRAKE_LOG_FILE_STDOUT"
+        rm "$HANDBRAKE_LOG_FILE_STDOUT"
 
         if [ -z "$3" ]; then
 
             ARCHIVE_FILE="$(sanitise_path "$ARCHIVE_PATH/$SOURCE_FOLDER/$(basename "$1")")"
 
-            echo mkdir -p "$(dirname "$ARCHIVE_FILE")" || exit 2
+            mkdir -p "$(dirname "$ARCHIVE_FILE")" || exit 2
 
-            echo log_something "Moving: $1 to $ARCHIVE_FILE"
+            log_something "Moving: $1 to $ARCHIVE_FILE"
 
-            echo mv -n "$1" "$ARCHIVE_FILE"
+            mv -n "$1" "$ARCHIVE_FILE"
 
             MOVE_RESULT=$?
 
-            echo log_something "Move exit code: $MOVE_RESULT"
+            log_something "Move exit code: $MOVE_RESULT"
 
         fi
 
