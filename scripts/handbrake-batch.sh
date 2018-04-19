@@ -37,7 +37,12 @@ fi
 function log_something {
 
     echo "$1"
-    echo "$(date '+%c') $1" >> "$LOG_FILE"
+
+    if [ "$DRY_RUN" -eq "0" ]; then
+
+        echo "$(date '+%c') $1" >> "$LOG_FILE"
+
+    fi
 
 }
 
@@ -72,31 +77,47 @@ function process_file {
 
     fi
 
-    mkdir -p "$(dirname "$TARGET_FILE")" || exit 2
-
     log_something "Encoding: $1 to $TARGET_FILE"
 
-    "$HANDBRAKE_PATH" --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --output "$TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) </dev/null
+    if [ "$DRY_RUN" -eq "0" ]; then
 
-    HANDBRAKE_RESULT=$?
+        mkdir -p "$(dirname "$TARGET_FILE")" || exit 2
+
+        "$HANDBRAKE_PATH" --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --output "$TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) </dev/null
+
+        HANDBRAKE_RESULT=$?
+
+    else
+
+        HANDBRAKE_RESULT=0
+
+    fi
 
     log_something "Finished encoding (exit code $HANDBRAKE_RESULT): $1"
 
     if [ "$HANDBRAKE_RESULT" -eq "0" ]; then
 
-        rm "$HANDBRAKE_LOG_FILE_STDOUT"
+        [ "$DRY_RUN" -eq "0" ] && rm "$HANDBRAKE_LOG_FILE_STDOUT"
 
         if [ -z "$2" ]; then
 
             ARCHIVE_FILE="$(sanitise_path "$ARCHIVE_PATH/$SOURCE_FOLDER/$(basename "$1")")"
 
-            mkdir -p "$(dirname "$ARCHIVE_FILE")" || exit 2
+            [ "$DRY_RUN" -eq "0" ] && { mkdir -p "$(dirname "$ARCHIVE_FILE")" || exit 2; }
 
             log_something "Moving: $1 to $ARCHIVE_FILE"
 
-            mv -n "$1" "$ARCHIVE_FILE"
+            if [ "$DRY_RUN" -eq "0" ]; then
 
-            MOVE_RESULT=$?
+                mv -n "$1" "$ARCHIVE_FILE"
+
+                MOVE_RESULT=$?
+
+            else
+
+                MOVE_RESULT=0
+
+            fi
 
             log_something "Move exit code: $MOVE_RESULT"
 
@@ -131,31 +152,47 @@ function process_dvd {
 
     fi
 
-    mkdir -p "$(dirname "$TARGET_FILE")" || exit 2
-
     log_something "Encoding: $1 (title $2) to $TARGET_FILE"
 
-    "$HANDBRAKE_PATH" --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --title "$2" --output "$TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) </dev/null
+    if [ "$DRY_RUN" -eq "0" ]; then
 
-    HANDBRAKE_RESULT=$?
+        mkdir -p "$(dirname "$TARGET_FILE")" || exit 2
+
+        "$HANDBRAKE_PATH" --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --title "$2" --output "$TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) </dev/null
+
+        HANDBRAKE_RESULT=$?
+
+    else
+
+        HANDBRAKE_RESULT=0
+
+    fi
 
     log_something "Finished encoding (exit code $HANDBRAKE_RESULT): $1"
 
     if [ "$HANDBRAKE_RESULT" -eq "0" ]; then
 
-        rm "$HANDBRAKE_LOG_FILE_STDOUT"
+        [ "$DRY_RUN" -eq "0" ] && rm "$HANDBRAKE_LOG_FILE_STDOUT"
 
         if [ -z "$3" ]; then
 
             ARCHIVE_FILE="$(sanitise_path "$ARCHIVE_PATH/$SOURCE_FOLDER/$(basename "$1")")"
 
-            mkdir -p "$(dirname "$ARCHIVE_FILE")" || exit 2
+            [ "$DRY_RUN" -eq "0" ] && { mkdir -p "$(dirname "$ARCHIVE_FILE")" || exit 2; }
 
             log_something "Moving: $1 to $ARCHIVE_FILE"
 
-            mv -n "$1" "$ARCHIVE_FILE"
+            if [ "$DRY_RUN" -eq "0" ]; then
 
-            MOVE_RESULT=$?
+                mv -n "$1" "$ARCHIVE_FILE"
+
+                MOVE_RESULT=$?
+
+            else
+
+                MOVE_RESULT=0
+
+            fi
 
             log_something "Move exit code: $MOVE_RESULT"
 
@@ -175,7 +212,17 @@ LOG_FILE_BASE="$LOG_DIR/$(basename "$0")"
 LOG_FILE_BASE="${LOG_FILE_BASE/%.sh/}"
 LOG_FILE="$LOG_FILE_BASE.log"
 
-mkdir -p "$LOG_DIR" || exit 2
+DRY_RUN=0
+
+if [ "$1" == "dry" ]; then
+
+    echo "DRY RUN: no files will be changed."
+
+    DRY_RUN=1
+
+fi
+
+[ "$DRY_RUN" -eq "0" ] && { mkdir -p "$LOG_DIR" || exit 2; }
 
 # movies first
 while read -d $'\0' SOURCE_FILE; do
