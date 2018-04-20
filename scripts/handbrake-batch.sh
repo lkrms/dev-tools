@@ -229,7 +229,7 @@ while read -d $'\0' SOURCE_FILE; do
 
     process_file "$SOURCE_FILE"
 
-done < <(find "$SOURCE_PATH" -maxdepth 1 -type f -name '*.mkv' ! -iname '* - Side *' -print0 | sort -z)
+done < <(find "$SOURCE_PATH" -maxdepth 1 -type f -name '*.mkv' ! -iname '* - Side *' ! -name '.*' -print0 | sort -z)
 
 # TV shows second
 while read -d $'\0' FOLDER; do
@@ -258,7 +258,7 @@ while read -d $'\0' FOLDER; do
 
         process_file "$SOURCE_FILE" "${SERIES_NAME}${SEASON_NAME}_E$(printf "%02d" $EPISODE)"
 
-    done < <(find "$FOLDER" -maxdepth 1 -type f -name '*.mkv' ! -iname '* - Side *' -print0 | sort -z)
+    done < <(find "$FOLDER" -maxdepth 1 -type f -name '*.mkv' ! -iname '* - Side *' ! -name '.*' -print0 | sort -z)
 
     if [ -e "$FOLDER/titles.list" ]; then
 
@@ -276,5 +276,5 @@ while read -d $'\0' FOLDER; do
 
     fi
 
-done < <(find "$SOURCE_PATH" -mindepth 1 -maxdepth 2 -type d ! -path '*/__*' -print0 | sort -z)
+done < <(find "$SOURCE_PATH" -mindepth 1 -maxdepth 2 -type d ! -path '*/__*' ! -name '.*' -print0 | sort -z)
 
