@@ -300,6 +300,11 @@ sudo apt-get -y install \
     zlib1g-dev \
     || exit 1
 
+# needed for Synergy installation
+sudo apt-get -y install \
+    libavahi-compat-libdnssd1 \
+    || exit 1
+
 # needed for Db2 installation
 sudo apt-get -y install \
     libpam0g:i386 \
@@ -378,6 +383,51 @@ command -v jsl >/dev/null 2>&1 || sudo ln -s /usr/bin/jslint /usr/local/bin/jsl
 
 echo -e "Installing flatpack packages...\n"
 flatpak install -y flathub org.baedert.corebird || exit 1
+
+echo -e "Configuring TLP (power management)...\n"
+
+function applyTlpSetting {
+
+    INIFILE=$1
+    SETTINGNAME=$2
+    SETTINGVALUE=$3
+
+    if grep -qE "^${SETTINGNAME}=" "$INIFILE"; then
+
+        # we have a defined setting to replace
+        sudo sed -ri "s;^${SETTINGNAME}=.*\$;${SETTINGNAME}=${SETTINGVALUE};" "$INIFILE"
+
+    elif grep -qE "^#${SETTINGNAME}=" "$INIFILE"; then
+
+        # we have a commented-out setting to replace
+        sudo sed -ri "s;^#${SETTINGNAME}=.*\$;${SETTINGNAME}=${SETTINGVALUE};" "$INIFILE"
+
+    else
+
+        echo "${SETTINGNAME}=${SETTINGVALUE}" | sudo tee -a "$INIFILE" >/dev/null
+
+    fi
+
+}
+
+sudo update-rc.d -f ondemand remove || exit 1
+
+INI="/etc/default/tlp"
+
+if [ -f "$INI" ]; then
+
+    [ -f "${INI}.original" ] || sudo cp -p "$INI" "${INI}.original"
+
+    applyTlpSetting "$INI" CPU_SCALING_GOVERNOR_ON_AC performance
+    applyTlpSetting "$INI" CPU_SCALING_GOVERNOR_ON_BAT powersave
+    applyTlpSetting "$INI" CPU_HWP_ON_AC performance
+    applyTlpSetting "$INI" CPU_HWP_ON_BAT balance_power
+    applyTlpSetting "$INI" CPU_BOOST_ON_AC 1
+    applyTlpSetting "$INI" CPU_BOOST_ON_BAT 0
+    applyTlpSetting "$INI" USB_BLACKLIST_BTUSB 1
+    applyTlpSetting "$INI" USB_BLACKLIST_PHONE 1
+
+fi
 
 echo -e "Configuring MariaDB (MySQL)...\n"
 
