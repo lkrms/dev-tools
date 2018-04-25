@@ -1,10 +1,15 @@
 #!/bin/bash
 
-SOURCE_PATH="/Volumes/shared/rips"
-ARCHIVE_PATH="/Volumes/shared/rips/__converted"
-TARGET_PATH="/Volumes/Data/HandBrake"
-HANDBRAKE_PATH="/usr/local/bin/HandBrakeCLI"
-HANDBRAKE_PRESET="DVD (fast) + Subtitles"
+SCRIPT_DIR="$(cd "$(dirname "$0")"; pwd)"
+
+SOURCE_PATH=
+HANDBRAKE_PRESET="Fast 1080p30"
+
+[ -e "$SCRIPT_DIR/handbrake-settings" ] && . "$SCRIPT_DIR/handbrake-settings"
+
+[ -z "$SOURCE_PATH" ] && { echo "Error: SOURCE_PATH not provided."; exit 1; }
+[ -z "$ARCHIVE_PATH" ] && ARCHIVE_PATH="$SOURCE_PATH/__converted"
+[ -z "$TARGET_PATH" ] && TARGET_PATH="$SOURCE_PATH/__HandBrake"
 
 if [ ! -d "$SOURCE_PATH" ]; then
 
@@ -27,12 +32,7 @@ if [ ! -d "$TARGET_PATH" ]; then
 
 fi
 
-if [ ! -x "$HANDBRAKE_PATH" ]; then
-
-    echo "Error: $HANDBRAKE_PATH does not exist or is not executable."
-    exit 1
-
-fi
+command -v HandBrakeCLI >/dev/null 2>&1 || { echo "Error: HandBrakeCLI not found."; exit 1; }
 
 function log_something {
 
@@ -52,7 +52,19 @@ function sanitise_path {
 
 }
 
+function check_time {
+
+    if [ "$FINISH_AFTER" -ne "0" -a "$FINISH_AFTER" -le "$(date +'%s')" ]; then
+
+        log_something "Halting queue processing as requested."
+        exit
+
+    fi
+}
+
 function process_file {
+
+    check_time
 
     SOURCE_FOLDER="$(dirname "$1")"
     SOURCE_FOLDER="${SOURCE_FOLDER/#$SOURCE_PATH/}"
@@ -83,7 +95,7 @@ function process_file {
 
         mkdir -p "$(dirname "$TARGET_FILE")" || exit 2
 
-        "$HANDBRAKE_PATH" --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --output "$TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) </dev/null
+        HandBrakeCLI --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --output "$TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) </dev/null
 
         HANDBRAKE_RESULT=$?
 
@@ -129,6 +141,8 @@ function process_file {
 
 function process_dvd {
 
+    check_time
+
     SOURCE_FOLDER="$(dirname "$1")"
     SOURCE_FOLDER="${SOURCE_FOLDER/#$SOURCE_PATH/}"
     SOURCE_FOLDER="${SOURCE_FOLDER/#\//}"
@@ -158,7 +172,7 @@ function process_dvd {
 
         mkdir -p "$(dirname "$TARGET_FILE")" || exit 2
 
-        "$HANDBRAKE_PATH" --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --title "$2" --output "$TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) </dev/null
+        HandBrakeCLI --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --title "$2" --output "$TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) </dev/null
 
         HANDBRAKE_RESULT=$?
 
@@ -213,6 +227,7 @@ LOG_FILE_BASE="${LOG_FILE_BASE/%.sh/}"
 LOG_FILE="$LOG_FILE_BASE.log"
 
 DRY_RUN=0
+FINISH_AFTER=0
 
 if [ "$1" == "dry" ]; then
 
@@ -220,9 +235,19 @@ if [ "$1" == "dry" ]; then
 
     DRY_RUN=1
 
-fi
+elif [ -n "$1" ]; then
 
-[ "$DRY_RUN" -eq "0" ] && { mkdir -p "$LOG_DIR" || exit 2; }
+    FINISH_AFTER=$(date -d "$1" +'%s' 2>/dev/null) || { echo "Invalid time: $1"; exit 1; }
+
+    mkdir -p "$LOG_DIR" || exit 2
+
+    log_something "Queue processing will not continue after: $(date -d "@$FINISH_AFTER")"
+
+else
+
+    mkdir -p "$LOG_DIR" || exit 2
+
+fi
 
 # movies first
 while read -d $'\0' SOURCE_FILE; do

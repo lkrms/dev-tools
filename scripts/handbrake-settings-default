@@ -1,0 +1,11 @@
+# must be provided
+SOURCE_PATH="/media/$USER/rips"
+
+# if not provided, defaults to $SOURCE_PATH/__converted
+ARCHIVE_PATH="/media/$USER/rips/__converted"
+
+# if not provided, defaults to $SOURCE_PATH/__HandBrake
+TARGET_PATH="/media/$USER/movies"
+
+# defaults to "Fast 1080p30"
+HANDBRAKE_PRESET="Fast 1080p30"
