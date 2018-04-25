@@ -85,7 +85,7 @@ function process_file {
     if [ -e "$TARGET_FILE" ]; then
 
         log_something "Target exists (skipping): $TARGET_FILE"
-        return 1
+        return 0
 
     fi
 
@@ -133,7 +133,19 @@ function process_file {
 
             log_something "Move exit code: $MOVE_RESULT"
 
+            return $MOVE_RESULT
+
+        else
+
+            return 0
+
         fi
+
+    else
+
+        [ "$DRY_RUN" -eq "0" -a -e "$TARGET_FILE" ] && mv "$TARGET_FILE" "$TARGET_FILE.delete"
+
+        return 2
 
     fi
 
@@ -162,7 +174,7 @@ function process_dvd {
     if [ -e "$TARGET_FILE" ]; then
 
         log_something "Target exists (skipping): $TARGET_FILE"
-        return 1
+        return 0
 
     fi
 
@@ -210,7 +222,19 @@ function process_dvd {
 
             log_something "Move exit code: $MOVE_RESULT"
 
+            return $MOVE_RESULT
+
+        else
+
+            return 0
+
         fi
+
+    else
+
+        [ "$DRY_RUN" -eq "0" -a -e "$TARGET_FILE" ] && mv "$TARGET_FILE" "$TARGET_FILE.delete"
+
+        return 2
 
     fi
 
@@ -276,12 +300,13 @@ while read -d $'\0' FOLDER; do
     fi
 
     EPISODE=0
+    ERRORS=0
 
     while read -d $'\0' SOURCE_FILE; do
 
         let EPISODE=EPISODE+1
 
-        process_file "$SOURCE_FILE" "${SERIES_NAME}${SEASON_NAME}_E$(printf "%02d" $EPISODE)"
+        process_file "$SOURCE_FILE" "${SERIES_NAME}${SEASON_NAME}_E$(printf "%02d" $EPISODE)" || let ERRORS=ERRORS+1
 
     done < <(find "$FOLDER" -maxdepth 1 -type f -name '*.mkv' ! -iname '* - Side *' ! -name '.*' -print0 | sort -z)
 
@@ -293,11 +318,35 @@ while read -d $'\0' FOLDER; do
 
             if [ ! -z "$DVD_SOURCE" -a -e "$FOLDER/$DVD_SOURCE" -a ! -z "$DVD_TITLE" ]; then
 
-                process_dvd "$FOLDER/$DVD_SOURCE" "$DVD_TITLE" "${SERIES_NAME}${SEASON_NAME}_E$(printf "%02d" $EPISODE)"
+                process_dvd "$FOLDER/$DVD_SOURCE" "$DVD_TITLE" "${SERIES_NAME}${SEASON_NAME}_E$(printf "%02d" $EPISODE)" || let ERRORS=ERRORS+1
 
             fi
 
         done < "$FOLDER/titles.list"
+
+    fi
+
+    if [ "$EPISODE" -gt "0" -a "$ERRORS" -eq "0" ]; then
+
+        ARCHIVE_FOLDER="$(sanitise_path "$ARCHIVE_PATH/$RELATIVE_FOLDER")"
+
+        [ "$DRY_RUN" -eq "0" ] && { mkdir -p "$(dirname "$ARCHIVE_FOLDER")" || exit 2; }
+
+        log_something "Moving folder: $FOLDER to $ARCHIVE_FOLDER"
+
+        if [ "$DRY_RUN" -eq "0" ]; then
+
+            mv -n "$FOLDER" "$ARCHIVE_FOLDER"
+
+            MOVE_RESULT=$?
+
+        else
+
+            MOVE_RESULT=0
+
+        fi
+
+        log_something "Move exit code: $MOVE_RESULT"
 
     fi
 
