@@ -341,7 +341,7 @@ wget -c --no-use-server-timestamps http://get.code-industry.net/public/master-pd
 wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://downloads.slack-edge.com/linux_releases/slack-desktop-3.1.1-amd64.deb || exit 1
-wget -c --no-use-server-timestamps https://github.com/saenzramiro/rambox/releases/download/0.5.16/Rambox_0.5.16-x64.deb || exit 1
+wget -c --no-use-server-timestamps https://github.com/saenzramiro/rambox/releases/download/0.5.17/Rambox_0.5.17-x64.deb || exit 1
 wget -c --no-use-server-timestamps https://go.skype.com/skypeforlinux-64.deb || exit 1
 wget -c --no-use-server-timestamps https://release.gitkraken.com/linux/gitkraken-amd64.deb || exit 1
 
