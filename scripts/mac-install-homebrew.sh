@@ -15,7 +15,7 @@ brew install \
     ghostscript \
     mariadb \
     micro \
-    node \
+    node@8 \
     pandoc \
     pv \
     rsync \
@@ -23,6 +23,8 @@ brew install \
     yarn \
     youtube-dl \
     || exit 2
+
+brew link --force node@8
 
 brew cask install mactex || exit 2
 
