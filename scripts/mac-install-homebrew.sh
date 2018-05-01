@@ -9,6 +9,8 @@ fi
 
 command -v brew >/dev/null 2>&1 || /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" || exit 2
 
+brew upgrade
+
 brew install \
     ant \
     coreutils \
@@ -24,7 +26,7 @@ brew install \
     youtube-dl \
     || exit 2
 
-brew link --force node@8
+brew link --force node@8 || exit 2
 
 brew cask install mactex || exit 2
 
