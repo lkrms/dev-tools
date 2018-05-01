@@ -12,8 +12,10 @@ command -v brew >/dev/null 2>&1 || /usr/bin/ruby -e "$(curl -fsSL https://raw.gi
 brew install \
     ant \
     mariadb \
-    node \
+    node@8 \
     yarn \
     || exit 2
+
+brew link --force node@8 || exit 2 
 
 echo -e "\n\nDone."
