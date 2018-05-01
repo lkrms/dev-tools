@@ -16,6 +16,7 @@ brew install \
     yarn \
     || exit 2
 
-brew link --force node@8 || exit 2 
+brew link --force node@8 || exit 2
 
 echo -e "\n\nDone."
+
