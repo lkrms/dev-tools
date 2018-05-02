@@ -140,8 +140,10 @@ $(function () {
 
         // clear any remaining unwanted attributes
         p.find("[class]").removeAttr("class");
-        p.find("[style]").removeAttr("style");
+        p.find("[dir]").removeAttr("dir");
+        p.find("[id]").removeAttr("id");
         p.find("[lang]").removeAttr("lang");
+        p.find("[style]").removeAttr("style");
 
         // matched elements (at the top level only) get a spacer inserted after them
         p.children("div, p").each(function () {
