@@ -16,6 +16,13 @@ if [ "$DISTRIB_ID" != "Ubuntu" ]; then
 
 fi
 
+if [ "$DISTRIB_CODENAME" != "xenial" -a "$DISTRIB_CODENAME" != "bionic" ]; then
+
+    echo "Error: $(basename "$0") is only supported on LTS releases of Ubuntu."
+    exit 1
+
+fi
+
 echo -e "Upgrading everything that's currently installed...\n"
 
 sudo apt-get update || exit 1
@@ -23,7 +30,7 @@ sudo apt-get -y dist-upgrade || exit 1
 
 echo -e "Installing missing drivers...\n"
 
-sudo ubuntu-drivers autoinstall || exit 1
+sudo ubuntu-drivers autoinstall
 
 echo -e "Installing software-properties-common to get add-apt-repository...\n"
 
@@ -31,10 +38,9 @@ sudo apt-get -y install software-properties-common || exit 1
 
 echo -e "Adding all required apt repositories...\n"
 
-OLD_SOURCES="$(cat /etc/apt/sources.list /etc/apt/sources.list.d/*.list)"
+OLD_SOURCES="$(cat /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null)"
 
 cat /etc/apt/sources.list.d/*.list | grep -q 'alexlarsson/flatpak' || sudo add-apt-repository -y ppa:alexlarsson/flatpak || exit 1
-cat /etc/apt/sources.list.d/*.list | grep -q 'caffeine-developers/ppa' || sudo add-apt-repository -y ppa:caffeine-developers/ppa || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'inkscape.dev/stable' || sudo add-apt-repository -y ppa:inkscape.dev/stable || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'linrunner/tlp' || sudo add-apt-repository -y ppa:linrunner/tlp || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'phoerious/keepassxc' || sudo add-apt-repository -y ppa:phoerious/keepassxc || exit 1
@@ -47,6 +53,10 @@ cat /etc/apt/sources.list.d/*.list | grep -q 'wereturtle/ppa' || sudo add-apt-re
 if [ "$DISTRIB_CODENAME" != "xenial" ]; then
 
     cat /etc/apt/sources.list.d/*.list | grep -q 'hluk/copyq' || sudo add-apt-repository -y ppa:hluk/copyq || exit 1
+
+else
+
+    cat /etc/apt/sources.list.d/*.list | grep -q 'caffeine-developers/ppa' || sudo add-apt-repository -y ppa:caffeine-developers/ppa || exit 1
 
 fi
 
