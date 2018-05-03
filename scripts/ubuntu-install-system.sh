@@ -40,7 +40,7 @@ echo -e "Adding all required apt repositories...\n"
 
 OLD_SOURCES="$(cat /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null)"
 
-cat /etc/apt/sources.list.d/*.list | grep -q 'alexlarsson/flatpak' || sudo add-apt-repository -y ppa:alexlarsson/flatpak || exit 1
+cat /etc/apt/sources.list.d/*.list 2>/dev/null | grep -q 'alexlarsson/flatpak' || sudo add-apt-repository -y ppa:alexlarsson/flatpak || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'inkscape.dev/stable' || sudo add-apt-repository -y ppa:inkscape.dev/stable || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'linrunner/tlp' || sudo add-apt-repository -y ppa:linrunner/tlp || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'phoerious/keepassxc' || sudo add-apt-repository -y ppa:phoerious/keepassxc || exit 1
@@ -64,8 +64,13 @@ cat /etc/apt/sources.list | grep -q '^deb .*'"$DISTRIB_CODENAME"'.*partner' || s
 
 if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
 
+    DOCKER_CODENAME=$DISTRIB_CODENAME
+
+    # temporary workaround until Docker adds support for bionic
+    [ "$DOCKER_CODENAME" == "xenial" ] || DOCKER_CODENAME=artful
+
     wget -O - https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - || exit 1
-    echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $DISTRIB_CODENAME stable" | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null || exit 1
+    echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $DOCKER_CODENAME stable" | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null || exit 1
 
 fi
 
@@ -93,7 +98,7 @@ fi
 if [ ! -f /etc/apt/sources.list.d/virtualbox.list ]; then
 
     wget -O - https://www.virtualbox.org/download/oracle_vbox_2016.asc | sudo apt-key add - || exit 1
-    echo "deb http://download.virtualbox.org/virtualbox/debian $DISTRIB_CODENAME contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list >/dev/null || exit 1
+    echo "deb [arch=amd64] http://download.virtualbox.org/virtualbox/debian $DISTRIB_CODENAME contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list >/dev/null || exit 1
 
 fi
 
