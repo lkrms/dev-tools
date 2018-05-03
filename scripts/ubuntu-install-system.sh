@@ -204,8 +204,16 @@ sudo apt-get -y install \
 # PDF manipulation
 sudo apt-get -y install \
     ghostscript \
-    pdftk \
     || exit 1
+
+if [ "$DISTRIB_CODENAME" == "xenial" ]; then
+
+    # pdftk not offered in bionic
+    sudo apt-get -y install \
+        pdftk \
+        || exit 1
+
+fi
 
 # indicator-based apps
 sudo apt-get -y install \
