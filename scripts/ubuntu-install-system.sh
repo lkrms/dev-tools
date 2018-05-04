@@ -198,7 +198,7 @@ sudo apt-get -y install \
     yarn \
     || exit 1
 
-sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || exit 1
 
 # Pandoc
 sudo apt-get -y install \
@@ -397,10 +397,10 @@ echo -e "Updating all npm packages...\n"
 sudo npm update -g || exit 1
 
 echo -e "Installing flatpack packages...\n"
-sudo flatpak install -y flathub org.baedert.corebird || exit 1
+flatpak install -y flathub org.baedert.corebird || exit 1
 
 echo -e "Updating all flatpak packages...\n"
-sudo flatpak update || exit 1
+flatpak update || exit 1
 
 echo -e "Configuring TLP (power management)...\n"
 
