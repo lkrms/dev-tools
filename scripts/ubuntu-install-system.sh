@@ -634,8 +634,17 @@ fi
 # GitKraken supports KDiff, but not Meld, so ...
 command -v kdiff3 >/dev/null 2>&1 || sudo ln -s /usr/bin/meld /usr/local/bin/kdiff3
 
-# on Ubuntu, move launcher to bottom
-gsettings set com.canonical.Unity.Launcher launcher-position Bottom
+# move launcher to bottom
+if [ "$DISTRIB_CODENAME" == "xenial" ]; then
+
+    gsettings set com.canonical.Unity.Launcher launcher-position Bottom
+
+elif [ "$DISTRIB_CODENAME" == "bionic" ]; then
+
+    gsettings set org.gnome.shell.extensions.dash-to-dock dock-position BOTTOM
+    gsettings set org.gnome.shell.extensions.dash-to-dock show-apps-at-top true
+
+fi
 
 echo -e "\n\nDone. You may also want to install: libpam-gnome-keyring (if this is a Lubuntu installation), unity-tweak-tool, compizconfig-settings-manager"
 
