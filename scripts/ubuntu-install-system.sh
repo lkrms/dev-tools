@@ -27,10 +27,13 @@ echo -e "Upgrading everything that's currently installed...\n"
 
 sudo apt-get update || exit 1
 sudo apt-get -y dist-upgrade || exit 1
+sudo snap refresh || exit 1
 
 echo -e "Installing missing drivers...\n"
 
-sudo ubuntu-drivers autoinstall
+DRIVER_ERRORS=0
+
+sudo ubuntu-drivers autoinstall || DRIVER_ERRORS=1
 
 echo -e "Installing software-properties-common to get add-apt-repository...\n"
 
@@ -41,22 +44,24 @@ echo -e "Adding all required apt repositories...\n"
 OLD_SOURCES="$(cat /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null)"
 
 cat /etc/apt/sources.list.d/*.list 2>/dev/null | grep -q 'alexlarsson/flatpak' || sudo add-apt-repository -y ppa:alexlarsson/flatpak || exit 1
-cat /etc/apt/sources.list.d/*.list | grep -q 'inkscape.dev/stable' || sudo add-apt-repository -y ppa:inkscape.dev/stable || exit 1
-cat /etc/apt/sources.list.d/*.list | grep -q 'linrunner/tlp' || sudo add-apt-repository -y ppa:linrunner/tlp || exit 1
-cat /etc/apt/sources.list.d/*.list | grep -q 'phoerious/keepassxc' || sudo add-apt-repository -y ppa:phoerious/keepassxc || exit 1
-cat /etc/apt/sources.list.d/*.list | grep -q 'scribus/ppa' || sudo add-apt-repository -y ppa:scribus/ppa || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'stebbins/handbrake-releases' || sudo add-apt-repository -y ppa:stebbins/handbrake-releases || exit 1
 
 # Ghostwriter
 cat /etc/apt/sources.list.d/*.list | grep -q 'wereturtle/ppa' || sudo add-apt-repository -y ppa:wereturtle/ppa || exit 1
 
-if [ "$DISTRIB_CODENAME" != "xenial" ]; then
+if [ "$DISTRIB_CODENAME" == "xenial" ]; then
 
-    cat /etc/apt/sources.list.d/*.list | grep -q 'hluk/copyq' || sudo add-apt-repository -y ppa:hluk/copyq || exit 1
+    # bionic provides up-to-date versions of these out-of-the-box
+    cat /etc/apt/sources.list.d/*.list | grep -q 'caffeine-developers/ppa' || sudo add-apt-repository -y ppa:caffeine-developers/ppa || exit 1
+    cat /etc/apt/sources.list.d/*.list | grep -q 'inkscape.dev/stable' || sudo add-apt-repository -y ppa:inkscape.dev/stable || exit 1
+    cat /etc/apt/sources.list.d/*.list | grep -q 'linrunner/tlp' || sudo add-apt-repository -y ppa:linrunner/tlp || exit 1
+    cat /etc/apt/sources.list.d/*.list | grep -q 'phoerious/keepassxc' || sudo add-apt-repository -y ppa:phoerious/keepassxc || exit 1
+    cat /etc/apt/sources.list.d/*.list | grep -q 'scribus/ppa' || sudo add-apt-repository -y ppa:scribus/ppa || exit 1
 
 else
 
-    cat /etc/apt/sources.list.d/*.list | grep -q 'caffeine-developers/ppa' || sudo add-apt-repository -y ppa:caffeine-developers/ppa || exit 1
+    # CopyQ's PPA version depends on Qt 5, so we install an old version on xenial
+    cat /etc/apt/sources.list.d/*.list | grep -q 'hluk/copyq' || sudo add-apt-repository -y ppa:hluk/copyq || exit 1
 
 fi
 
@@ -67,7 +72,7 @@ if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
     DOCKER_CODENAME=$DISTRIB_CODENAME
 
     # temporary workaround until Docker adds support for bionic
-    [ "$DOCKER_CODENAME" == "xenial" ] || DOCKER_CODENAME=artful
+    [ "$DISTRIB_CODENAME" == "bionic" ] && DOCKER_CODENAME=artful
 
     wget -O - https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - || exit 1
     echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $DOCKER_CODENAME stable" | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null || exit 1
@@ -119,7 +124,7 @@ fi
 if [ ! -f /etc/apt/sources.list.d/typora.list ]; then
 
     sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BA300B7755AFCFAE || exit 1
-    echo "deb http://typora.io linux/" | sudo tee /etc/apt/sources.list.d/typora.list >/dev/null || exit 1
+    echo "deb https://typora.io ./linux/" | sudo tee /etc/apt/sources.list.d/typora.list >/dev/null || exit 1
 
 fi
 
@@ -151,7 +156,6 @@ echo -e "Installing everything you might need...\n"
 # virtualisation
 sudo apt-get -y install \
     docker-ce \
-    docker-compose \
     virtualbox-5.2 \
     || exit 1
 
@@ -170,10 +174,12 @@ sudo apt-get -y install \
 
 # system / network / terminal utilities
 sudo apt-get -y install \
+    aptitude \
     attr \
     debconf-utils \
     hwinfo \
     iotop \
+    net-tools \
     nethogs \
     openssh-server \
     powertop \
@@ -192,7 +198,7 @@ sudo apt-get -y install \
     yarn \
     || exit 1
 
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
 # Pandoc
 sudo apt-get -y install \
@@ -206,12 +212,11 @@ sudo apt-get -y install \
     ghostscript \
     || exit 1
 
-if [ "$DISTRIB_CODENAME" == "xenial" ]; then
+if dpkg -s pdftk >/dev/null 2>&1; then
 
-    # pdftk not offered in bionic
-    sudo apt-get -y install \
-        pdftk \
-        || exit 1
+    echo -e "Removing pdftk...\n"
+
+    sudo apt-get -y purge pdftk
 
 fi
 
@@ -282,7 +287,6 @@ sudo apt-get -y install \
     php-imap \
     php-json \
     php-mbstring \
-    php-mcrypt \
     php-mysql \
     php-pear \
     php-soap \
@@ -296,6 +300,15 @@ sudo apt-get -y install \
     python-requests \
     ruby \
     || exit 1
+
+if [ "$DISTRIB_CODENAME" == "xenial" ]; then
+
+    # removed from PHP 7.2, which ships with bionic
+    sudo apt-get -y install \
+        php-mcrypt \
+        || exit 1
+
+fi
 
 # services for development
 sudo apt-get -y install \
@@ -339,12 +352,6 @@ sudo apt-get -y install \
     lib32z1 \
     || exit 1
 
-# needed for TeamViewer
-sudo apt-get -y install \
-    qtdeclarative5-controls-plugin \
-    qtdeclarative5-dialogs-plugin \
-    || exit 1
-
 if dpkg -s deja-dup >/dev/null 2>&1; then
 
     echo -e "Removing deja-dup...\n"
@@ -363,7 +370,6 @@ find . -maxdepth 1 -type f -name '*.deb' -mtime +1 -delete
 wget -c --no-use-server-timestamps http://get.code-industry.net/public/master-pdf-editor-4.3.89_qt5.amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
-wget -c --no-use-server-timestamps https://downloads.slack-edge.com/linux_releases/slack-desktop-3.1.1-amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://github.com/saenzramiro/rambox/releases/download/0.5.17/Rambox_0.5.17-x64.deb || exit 1
 wget -c --no-use-server-timestamps https://go.skype.com/skypeforlinux-64.deb || exit 1
 wget -c --no-use-server-timestamps https://release.gitkraken.com/linux/gitkraken-amd64.deb || exit 1
@@ -374,29 +380,12 @@ if [ "$DISTRIB_CODENAME" == "xenial" ]; then
 
 fi
 
-# delete apps that may have been installed previously
-if dpkg -s messengerfordesktop >/dev/null 2>&1; then
-
-    echo -e "Removing messengerfordesktop...\n"
-
-    sudo apt-get -y purge messengerfordesktop
-
-fi
-
-if dpkg -s teams-for-linux >/dev/null 2>&1; then
-
-    echo -e "Removing teams-for-linux...\n"
-
-    sudo apt-get -y purge teams-for-linux
-
-fi
-
-sudo dpkg -EGi *.deb || exit 1
+sudo dpkg -EGi *.deb || sudo aptitude -yf install || exit 1
 
 popd >/dev/null
 
-#echo -e "Disabling TeamViewer daemon...\n"
-#sudo teamviewer daemon disable >/dev/null 2>&1
+echo -e "Installing snaps...\n"
+sudo snap install slack --classic || exit 1
 
 echo -e "Installing npm packages...\n"
 sudo npm install -g jslint || exit 1
@@ -404,8 +393,14 @@ sudo npm install -g jslint || exit 1
 # Sublime Text expects "jsl" to be on the path, so make it so
 command -v jsl >/dev/null 2>&1 || sudo ln -s /usr/bin/jslint /usr/local/bin/jsl
 
+echo -e "Updating all npm packages...\n"
+sudo npm update -g || exit 1
+
 echo -e "Installing flatpack packages...\n"
-flatpak install -y flathub org.baedert.corebird || exit 1
+sudo flatpak install -y flathub org.baedert.corebird || exit 1
+
+echo -e "Updating all flatpak packages...\n"
+sudo flatpak update || exit 1
 
 echo -e "Configuring TLP (power management)...\n"
 
@@ -641,9 +636,6 @@ command -v kdiff3 >/dev/null 2>&1 || sudo ln -s /usr/bin/meld /usr/local/bin/kdi
 
 # on Ubuntu, move launcher to bottom
 gsettings set com.canonical.Unity.Launcher launcher-position Bottom
-
-# and disable automatic update checks (we do them manually often enough)
-gsettings set com.ubuntu.update-notifier no-show-notifications true
 
 echo -e "\n\nDone. You may also want to install: libpam-gnome-keyring (if this is a Lubuntu installation), unity-tweak-tool, compizconfig-settings-manager"
 
