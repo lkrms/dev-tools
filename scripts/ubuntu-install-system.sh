@@ -376,6 +376,7 @@ wget -c --no-use-server-timestamps https://release.gitkraken.com/linux/gitkraken
 
 if [ "$DISTRIB_CODENAME" == "xenial" ]; then
 
+    wget -c --no-use-server-timestamps https://downloads.slack-edge.com/linux_releases/slack-desktop-3.1.1-amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://github.com/hluk/CopyQ/releases/download/v3.1.1/copyq_3.1.1_Ubuntu_16.04-1_amd64.deb || exit 1
 
 fi
@@ -385,7 +386,12 @@ sudo dpkg -EGi *.deb || sudo aptitude -yf install || exit 1
 popd >/dev/null
 
 echo -e "Installing snaps...\n"
-sudo snap install slack --classic || exit 1
+
+if [ "$DISTRIB_CODENAME" != "xenial" ]; then
+
+    sudo snap install slack --classic || exit 1
+
+fi
 
 echo -e "Installing npm packages...\n"
 sudo npm install -g jslint || exit 1
