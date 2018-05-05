@@ -7,5 +7,15 @@ ARCHIVE_PATH="/media/$USER/rips/__converted"
 # if not provided, defaults to $SOURCE_PATH/__HandBrake
 TARGET_PATH="/media/$USER/movies"
 
+# defaults to m4v
+TARGET_EXTENSION=m4v
+
 # defaults to "Fast 1080p30"
 HANDBRAKE_PRESET="Fast 1080p30"
+
+# optional secondary source/archive/target/preset
+SOURCE_PATH2="/media/$USER/blu-rips"
+ARCHIVE_PATH2="/media/$USER/blu-rips/__converted"
+TARGET_PATH2="$TARGET_PATH"
+TARGET_EXTENSION2=mkv
+HANDBRAKE_PRESET2="Fast 1080p30"

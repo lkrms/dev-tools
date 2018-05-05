@@ -3,7 +3,12 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")"; pwd)"
 
 SOURCE_PATH=
+TARGET_EXTENSION=m4v
 HANDBRAKE_PRESET="Fast 1080p30"
+
+SOURCE_PATH2=
+TARGET_EXTENSION2=m4v
+HANDBRAKE_PRESET2="Fast 1080p30"
 
 [ -e "$SCRIPT_DIR/handbrake-settings" ] && . "$SCRIPT_DIR/handbrake-settings"
 
@@ -29,6 +34,34 @@ if [ ! -d "$TARGET_PATH" ]; then
 
     echo "Error: $TARGET_PATH does not exist or is not a folder."
     exit 1
+
+fi
+
+if [ -n "$SOURCE_PATH2" ]; then
+
+    [ -z "$ARCHIVE_PATH2" ] && ARCHIVE_PATH2="$SOURCE_PATH2/__converted"
+    [ -z "$TARGET_PATH2" ] && TARGET_PATH2="$SOURCE_PATH2/__HandBrake"
+
+    if [ ! -d "$SOURCE_PATH2" ]; then
+
+        echo "Error: $SOURCE_PATH2 does not exist or is not a folder."
+        exit 1
+
+    fi
+
+    if [ ! -d "$ARCHIVE_PATH2" ]; then
+
+        echo "Error: $ARCHIVE_PATH2 does not exist or is not a folder."
+        exit 1
+
+    fi
+
+    if [ ! -d "$TARGET_PATH2" ]; then
+
+        echo "Error: $TARGET_PATH2 does not exist or is not a folder."
+        exit 1
+
+    fi
 
 fi
 
@@ -78,7 +111,7 @@ function process_file {
 
     fi
 
-    TARGET_FILE="$(sanitise_path "$TARGET_PATH/$SOURCE_FOLDER/$SOURCE_NAME.m4v")"
+    TARGET_FILE="$(sanitise_path "$TARGET_PATH/$SOURCE_FOLDER/$SOURCE_NAME.$TARGET_EXTENSION")"
     HANDBRAKE_LOG_FILE="$LOG_FILE_BASE.${1//\//-}.log"
     HANDBRAKE_LOG_FILE_STDOUT="$LOG_FILE_BASE.${1//\//-}.stdout.log"
 
@@ -89,7 +122,7 @@ function process_file {
 
     fi
 
-    log_something "Encoding: $1 to $TARGET_FILE"
+    log_something "Encoding: $1 to $TARGET_FILE with preset: $HANDBRAKE_PRESET"
 
     if [ "$DRY_RUN" -eq "0" ]; then
 
@@ -167,7 +200,7 @@ function process_dvd {
 
     fi
 
-    TARGET_FILE="$(sanitise_path "$TARGET_PATH/$SOURCE_FOLDER/$SOURCE_NAME.m4v")"
+    TARGET_FILE="$(sanitise_path "$TARGET_PATH/$SOURCE_FOLDER/$SOURCE_NAME.$TARGET_EXTENSION")"
     HANDBRAKE_LOG_FILE="$LOG_FILE_BASE.${1//\//-}.$2.log"
     HANDBRAKE_LOG_FILE_STDOUT="$LOG_FILE_BASE.${1//\//-}.$2.stdout.log"
 
@@ -178,7 +211,7 @@ function process_dvd {
 
     fi
 
-    log_something "Encoding: $1 (title $2) to $TARGET_FILE"
+    log_something "Encoding: $1 (title $2) to $TARGET_FILE with preset: $HANDBRAKE_PRESET"
 
     if [ "$DRY_RUN" -eq "0" ]; then
 
@@ -244,6 +277,14 @@ SOURCE_PATH="$(sanitise_path "$SOURCE_PATH")"
 ARCHIVE_PATH="$(sanitise_path "$ARCHIVE_PATH")"
 TARGET_PATH="$(sanitise_path "$TARGET_PATH")"
 
+if [ -n "$SOURCE_PATH2" ]; then
+
+    SOURCE_PATH2="$(sanitise_path "$SOURCE_PATH2")"
+    ARCHIVE_PATH2="$(sanitise_path "$ARCHIVE_PATH2")"
+    TARGET_PATH2="$(sanitise_path "$TARGET_PATH2")"
+
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")"; pwd)"
 LOG_DIR="$SCRIPT_DIR/log"
 LOG_FILE_BASE="$LOG_DIR/$(basename "$0")"
@@ -273,82 +314,106 @@ else
 
 fi
 
-# movies first
-while read -d $'\0' SOURCE_FILE; do
+while [ -n "$SOURCE_PATH" ]; do
 
-    process_file "$SOURCE_FILE"
-
-done < <(find "$SOURCE_PATH" -maxdepth 1 -type f -name '*.mkv' ! -iname '* - Side *' ! -name '.*' -print0 | sort -z)
-
-# TV shows second
-while read -d $'\0' FOLDER; do
-
-    RELATIVE_FOLDER="${FOLDER/#$SOURCE_PATH/}"
-    RELATIVE_FOLDER="${RELATIVE_FOLDER/#\//}"
-
-    SERIES_NAME="${RELATIVE_FOLDER/%\/*/}"
-    SEASON_NAME="${RELATIVE_FOLDER/#*\//}"
-
-    if [ "$SERIES_NAME" == "$SEASON_NAME" ]; then
-
-        SEASON_NAME=
-
-    else
-
-        SEASON_NAME="_S${SEASON_NAME//[^0-9]/}"
-
-    fi
-
-    EPISODE=0
-    ERRORS=0
-
+    # movies first
     while read -d $'\0' SOURCE_FILE; do
 
-        let EPISODE=EPISODE+1
+        process_file "$SOURCE_FILE"
 
-        process_file "$SOURCE_FILE" "${SERIES_NAME}${SEASON_NAME}_E$(printf "%02d" $EPISODE)" || let ERRORS=ERRORS+1
+    done < <(find "$SOURCE_PATH" -maxdepth 1 -type f -name '*.mkv' ! -iname '* - Side *' ! -name '.*' -print0 | sort -z)
 
-    done < <(find "$FOLDER" -maxdepth 1 -type f -name '*.mkv' ! -iname '* - Side *' ! -name '.*' -print0 | sort -z)
-
-    if [ -e "$FOLDER/titles.list" ]; then
+    if [ -e "$SOURCE_PATH/titles.list" ]; then
 
         while IFS=',' read -r DVD_SOURCE DVD_TITLE; do
 
-            let EPISODE=EPISODE+1
+            if [ ! -z "$DVD_SOURCE" -a -e "$SOURCE_PATH/$DVD_SOURCE" -a ! -z "$DVD_TITLE" ]; then
 
-            if [ ! -z "$DVD_SOURCE" -a -e "$FOLDER/$DVD_SOURCE" -a ! -z "$DVD_TITLE" ]; then
-
-                process_dvd "$FOLDER/$DVD_SOURCE" "$DVD_TITLE" "${SERIES_NAME}${SEASON_NAME}_E$(printf "%02d" $EPISODE)" || let ERRORS=ERRORS+1
+                process_dvd "$SOURCE_PATH/$DVD_SOURCE" "$DVD_TITLE"
 
             fi
 
-        done < "$FOLDER/titles.list"
+        done < "$SOURCE_PATH/titles.list"
 
     fi
 
-    if [ "$EPISODE" -gt "0" -a "$ERRORS" -eq "0" ]; then
+    # TV shows second
+    while read -d $'\0' FOLDER; do
 
-        ARCHIVE_FOLDER="$(sanitise_path "$ARCHIVE_PATH/$RELATIVE_FOLDER")"
+        RELATIVE_FOLDER="${FOLDER/#$SOURCE_PATH/}"
+        RELATIVE_FOLDER="${RELATIVE_FOLDER/#\//}"
 
-        [ "$DRY_RUN" -eq "0" ] && { mkdir -p "$(dirname "$ARCHIVE_FOLDER")" || exit 2; }
+        SERIES_NAME="${RELATIVE_FOLDER/%\/*/}"
+        SEASON_NAME="${RELATIVE_FOLDER/#*\//}"
 
-        log_something "Moving folder: $FOLDER to $ARCHIVE_FOLDER"
+        if [ "$SERIES_NAME" == "$SEASON_NAME" ]; then
 
-        if [ "$DRY_RUN" -eq "0" ]; then
-
-            mv -n "$FOLDER" "$ARCHIVE_FOLDER"
-
-            MOVE_RESULT=$?
+            SEASON_NAME=
 
         else
 
-            MOVE_RESULT=0
+            SEASON_NAME="_S${SEASON_NAME//[^0-9]/}"
 
         fi
 
-        log_something "Move exit code: $MOVE_RESULT"
+        EPISODE=0
+        ERRORS=0
 
-    fi
+        while read -d $'\0' SOURCE_FILE; do
 
-done < <(find "$SOURCE_PATH" -mindepth 1 -maxdepth 2 -type d ! -path '*/__*' ! -name '.*' -print0 | sort -z)
+            let EPISODE=EPISODE+1
 
+            process_file "$SOURCE_FILE" "${SERIES_NAME}${SEASON_NAME}_E$(printf "%02d" $EPISODE)" || let ERRORS=ERRORS+1
+
+        done < <(find "$FOLDER" -maxdepth 1 -type f -name '*.mkv' ! -iname '* - Side *' ! -name '.*' -print0 | sort -z)
+
+        if [ -e "$FOLDER/titles.list" ]; then
+
+            while IFS=',' read -r DVD_SOURCE DVD_TITLE; do
+
+                let EPISODE=EPISODE+1
+
+                if [ ! -z "$DVD_SOURCE" -a -e "$FOLDER/$DVD_SOURCE" -a ! -z "$DVD_TITLE" ]; then
+
+                    process_dvd "$FOLDER/$DVD_SOURCE" "$DVD_TITLE" "${SERIES_NAME}${SEASON_NAME}_E$(printf "%02d" $EPISODE)" || let ERRORS=ERRORS+1
+
+                fi
+
+            done < "$FOLDER/titles.list"
+
+        fi
+
+        if [ "$EPISODE" -gt "0" -a "$ERRORS" -eq "0" ]; then
+
+            ARCHIVE_FOLDER="$(sanitise_path "$ARCHIVE_PATH/$RELATIVE_FOLDER")"
+
+            [ "$DRY_RUN" -eq "0" ] && { mkdir -p "$(dirname "$ARCHIVE_FOLDER")" || exit 2; }
+
+            log_something "Moving folder: $FOLDER to $ARCHIVE_FOLDER"
+
+            if [ "$DRY_RUN" -eq "0" ]; then
+
+                mv -n "$FOLDER" "$ARCHIVE_FOLDER"
+
+                MOVE_RESULT=$?
+
+            else
+
+                MOVE_RESULT=0
+
+            fi
+
+            log_something "Move exit code: $MOVE_RESULT"
+
+        fi
+
+    done < <(find "$SOURCE_PATH" -mindepth 1 -maxdepth 2 -type d ! -path '*/__*' ! -name '.*' -print0 | sort -z)
+
+    SOURCE_PATH="$SOURCE_PATH2"
+    ARCHIVE_PATH="$ARCHIVE_PATH2"
+    TARGET_PATH="$TARGET_PATH2"
+    TARGET_EXTENSION="$TARGET_EXTENSION2"
+    HANDBRAKE_PRESET="$HANDBRAKE_PRESET2"
+    SOURCE_PATH2=
+
+done
