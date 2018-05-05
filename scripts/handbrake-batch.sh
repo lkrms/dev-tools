@@ -317,12 +317,6 @@ fi
 while [ -n "$SOURCE_PATH" ]; do
 
     # movies first
-    while read -d $'\0' SOURCE_FILE; do
-
-        process_file "$SOURCE_FILE"
-
-    done < <(find "$SOURCE_PATH" -maxdepth 1 -type f -name '*.mkv' ! -iname '* - Side *' ! -name '.*' -print0 | sort -z)
-
     if [ -e "$SOURCE_PATH/titles.list" ]; then
 
         while IFS=',' read -r DVD_SOURCE DVD_TITLE; do
@@ -336,6 +330,12 @@ while [ -n "$SOURCE_PATH" ]; do
         done < "$SOURCE_PATH/titles.list"
 
     fi
+
+    while read -d $'\0' SOURCE_FILE; do
+
+        process_file "$SOURCE_FILE"
+
+    done < <(find "$SOURCE_PATH" -maxdepth 1 -type f -name '*.mkv' ! -iname '* - Side *' ! -name '.*' -print0 | sort -z)
 
     # TV shows second
     while read -d $'\0' FOLDER; do
@@ -359,14 +359,6 @@ while [ -n "$SOURCE_PATH" ]; do
         EPISODE=0
         ERRORS=0
 
-        while read -d $'\0' SOURCE_FILE; do
-
-            let EPISODE=EPISODE+1
-
-            process_file "$SOURCE_FILE" "${SERIES_NAME}${SEASON_NAME}_E$(printf "%02d" $EPISODE)" || let ERRORS=ERRORS+1
-
-        done < <(find "$FOLDER" -maxdepth 1 -type f -name '*.mkv' ! -iname '* - Side *' ! -name '.*' -print0 | sort -z)
-
         if [ -e "$FOLDER/titles.list" ]; then
 
             while IFS=',' read -r DVD_SOURCE DVD_TITLE; do
@@ -382,6 +374,14 @@ while [ -n "$SOURCE_PATH" ]; do
             done < "$FOLDER/titles.list"
 
         fi
+
+        while read -d $'\0' SOURCE_FILE; do
+
+            let EPISODE=EPISODE+1
+
+            process_file "$SOURCE_FILE" "${SERIES_NAME}${SEASON_NAME}_E$(printf "%02d" $EPISODE)" || let ERRORS=ERRORS+1
+
+        done < <(find "$FOLDER" -maxdepth 1 -type f -name '*.mkv' ! -iname '* - Side *' ! -name '.*' -print0 | sort -z)
 
         if [ "$EPISODE" -gt "0" -a "$ERRORS" -eq "0" ]; then
 
