@@ -650,24 +650,22 @@ if [ "$DISTRIB_CODENAME" == "xenial" ]; then
 
     gsettings set com.canonical.Unity.Launcher launcher-position Bottom
 
+    sudo apt-get -y install unity-tweak-tool || exit 1
+
 elif [ "$DISTRIB_CODENAME" == "bionic" ]; then
 
     gsettings set org.gnome.shell.extensions.dash-to-dock dock-position BOTTOM
     gsettings set org.gnome.shell.extensions.dash-to-dock show-apps-at-top true
 
+    sudo apt-get -y install gnome-tweak-tool || exit 1
+
 fi
 
-echo -e "\n\nDone. You may also want to install: libpam-gnome-keyring (if this is a Lubuntu installation), unity-tweak-tool, compizconfig-settings-manager"
-
-echo -e "\n\nPlanning to work with Docker and Dory? Consider adding a '#' before 'dns=dnsmasq' in /etc/NetworkManager/NetworkManager.conf, disable Apache with 'systemctl disable apache2.service', and reboot."
-
-echo -e "\n\nTo complete the installation of libdvdcss, you may need to run: dpkg-reconfigure libdvd-pkg"
+echo -e "\n\nDone. To complete the installation of libdvdcss, you may need to run: sudo dpkg-reconfigure libdvd-pkg"
 
 if [ "$DRIVER_ERRORS" -ne "0" ]; then
 
-    echo -e "\n\nIMPORTANT: an error was encountered while installing missing drivers. Run 'ubuntu-drivers autoinstall' to try again."
+    echo -e "\nIMPORTANT: an error was encountered while installing missing drivers. Run 'ubuntu-drivers autoinstall' to try again."
 
 fi
-
-echo -e "\n\n"
 
