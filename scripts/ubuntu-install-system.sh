@@ -599,18 +599,21 @@ sudo a2enmod vhost_alias
 
 sudo service apache2 restart
 
-echo -e "Configuring VNC...\n"
+# x11vnc can't currently be configured to start before login on bionic; see http://c-nergy.be/blog/?p=8984
+if [ "$DISTRIB_CODENAME" == "xenial" ]; then
 
-if [ ! -f "$HOME/.vnc/passwd" ]; then
+    echo -e "Configuring VNC...\n"
 
-    echo -e "\nNo password has been set for VNC. Please provide one.\n\n"
-    x11vnc -storepasswd
+    if [ ! -f "$HOME/.vnc/passwd" ]; then
 
-fi
+        echo -e "\nNo password has been set for VNC. Please provide one.\n\n"
+        x11vnc -storepasswd
 
-if [ ! -f /lib/systemd/system/x11vnc.service ]; then
+    fi
 
-    sudo tee "/lib/systemd/system/x11vnc.service" >/dev/null <<EOF
+    if [ ! -f /lib/systemd/system/x11vnc.service ]; then
+
+        sudo tee "/lib/systemd/system/x11vnc.service" >/dev/null <<EOF
 [Unit]
 Description=Start x11vnc at startup.
 After=multi-user.target
@@ -623,9 +626,11 @@ ExecStart=/usr/bin/x11vnc -auth guess -forever -loop -noxdamage -repeat -rfbauth
 WantedBy=multi-user.target
 EOF
 
-    sudo systemctl daemon-reload
-    sudo systemctl enable x11vnc.service
-    sudo systemctl start x11vnc.service
+        sudo systemctl daemon-reload
+        sudo systemctl enable x11vnc.service
+        sudo systemctl start x11vnc.service
+
+    fi
 
 fi
 
@@ -657,6 +662,12 @@ echo -e "\n\nDone. You may also want to install: libpam-gnome-keyring (if this i
 echo -e "\n\nPlanning to work with Docker and Dory? Consider adding a '#' before 'dns=dnsmasq' in /etc/NetworkManager/NetworkManager.conf, disable Apache with 'systemctl disable apache2.service', and reboot."
 
 echo -e "\n\nTo complete the installation of libdvdcss, you may need to run: dpkg-reconfigure libdvd-pkg"
+
+if [ "$DRIVER_ERRORS" -ne "0" ]; then
+
+    echo -e "\n\nIMPORTANT: an error was encountered while installing missing drivers. Run 'ubuntu-drivers autoinstall' to try again."
+
+fi
 
 echo -e "\n\n"
 
