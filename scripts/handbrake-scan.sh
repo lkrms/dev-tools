@@ -1,23 +1,30 @@
 #!/bin/bash
 
-HANDBRAKE_PATH="/usr/local/bin/HandBrakeCLI"
+command -v HandBrakeCLI >/dev/null 2>&1 || { echo "Error: HandBrakeCLI not found."; exit 1; }
 
-if [ ! -x "$HANDBRAKE_PATH" ]; then
+function log_something {
 
-    echo "Error: $HANDBRAKE_PATH does not exist or is not executable."
-    exit 1
+    echo "$1"
 
-fi
+    echo "$(date '+%c') $1" >> "$LOG_FILE"
+
+}
+
+SCRIPT_DIR="$(cd "$(dirname "$0")"; pwd)"
+LOG_DIR="$SCRIPT_DIR/log"
+LOG_FILE_BASE="$LOG_DIR/$(basename "$0")"
+LOG_FILE_BASE="${LOG_FILE_BASE/%.sh/}"
+LOG_FILE="$LOG_FILE_BASE.log"
 
 while read -d $'\0' DVD_SOURCE; do
 
-    echo "Scanning: $DVD_SOURCE"
+    log_something "Scanning: $DVD_SOURCE"
 
-    "$HANDBRAKE_PATH" --scan --title 0 --input "$DVD_SOURCE" </dev/null 2>&1 | grep '^[[:space:]]*+' >"$DVD_SOURCE.handbrake-scan"
+    HandBrakeCLI --scan --title 0 --input "$DVD_SOURCE" </dev/null 2>&1 | grep '^[[:space:]]*+' >"$DVD_SOURCE.handbrake-scan"
 
     HANDBRAKE_RESULT=$?
 
-    echo "Exit code: $HANDBRAKE_RESULT"
+    log_something "Finished scanning (exit code $HANDBRAKE_RESULT): $DVD_SOURCE"
 
 done < <(find . -mindepth 1 -maxdepth 1 \( -type d -o -name '*.iso' \)  -print0 | sort -z)
 
