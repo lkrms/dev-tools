@@ -224,15 +224,24 @@ fi
 sudo apt-get -y install \
     autokey-gtk \
     blueman \
-    caffeine \
-    indicator-multiload \
     shutter \
     || exit 1
 
-if [ "$DISTRIB_CODENAME" != "xenial" ]; then
+if [ "$DISTRIB_CODENAME" == "xenial" ]; then
+
+    sudo apt-get -y install \
+        caffeine \
+        indicator-multiload \
+        || exit 1
+
+else
 
     sudo apt-get -y install \
         copyq \
+        gnome-shell-extension-caffeine \
+        gnome-shell-extension-multi-monitors \
+        gnome-shell-extension-pixelsaver \
+        gnome-shell-extension-system-monitor \
         || exit 1
 
 fi
@@ -250,6 +259,7 @@ sudo apt-get -y install \
 sudo apt-get -y install \
     filezilla \
     firefox \
+    fonts-symbola \
     galculator \
     geany \
     ghostwriter \
