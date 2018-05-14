@@ -44,6 +44,7 @@ echo -e "Adding all required apt repositories...\n"
 OLD_SOURCES="$(cat /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null)"
 
 cat /etc/apt/sources.list.d/*.list 2>/dev/null | grep -q 'alexlarsson/flatpak' || sudo add-apt-repository -y ppa:alexlarsson/flatpak || exit 1
+cat /etc/apt/sources.list.d/*.list | grep -q 'eosrei/fonts' || sudo add-apt-repository -y ppa:eosrei/fonts || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'stebbins/handbrake-releases' || sudo add-apt-repository -y ppa:stebbins/handbrake-releases || exit 1
 
 # Ghostwriter
@@ -260,6 +261,7 @@ sudo apt-get -y install \
     filezilla \
     firefox \
     fonts-symbola \
+    fonts-twemoji-svginot \
     galculator \
     geany \
     ghostwriter \
