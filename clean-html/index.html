@@ -159,6 +159,21 @@ $(function () {
 
         });
 
+        // specify target=_blank for all links (except mailto's)
+        p.find("a").each(function () {
+
+            if (!$(this).attr("href").match(/^mailto:/)) {
+
+                $(this).attr("target", "_blank");
+
+            } else {
+
+                $(this).removeAttr("target");
+
+            }
+
+        });
+
         // matched elements are replaced with divs
         p.find("p").each(function () {
 
