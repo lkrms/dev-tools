@@ -240,7 +240,6 @@ else
     sudo apt-get -y install \
         copyq \
         gnome-shell-extension-caffeine \
-        gnome-shell-extension-multi-monitors \
         gnome-shell-extension-pixelsaver \
         gnome-shell-extension-system-monitor \
         || exit 1
@@ -362,6 +361,8 @@ sudo apt-get -y install \
 sudo apt-get -y install \
     lib32ncurses5 \
     lib32z1 \
+    libpangox-1.0-0 \
+    network-manager-openconnect \
     || exit 1
 
 if dpkg -s deja-dup >/dev/null 2>&1; then
@@ -645,6 +646,9 @@ EOF
     fi
 
 fi
+
+sudo systemctl stop cups-browsed
+sudo systemctl disable cups-browsed
 
 # use Meld as our default merge / diff tool
 if [ "$(git config --global merge.tool)" == "" ]; then
