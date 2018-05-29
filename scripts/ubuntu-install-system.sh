@@ -282,6 +282,13 @@ sudo apt-get -y install \
     vlc \
     || exit 1
 
+# photography
+sudo apt-get -y install \
+    geeqie \
+    libmediainfo0v5 \
+    rapid-photo-downloader \
+    || exit 1
+
 # development
 sudo apt-get -y install \
     build-essential \
