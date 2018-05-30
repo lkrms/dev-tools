@@ -70,13 +70,8 @@ cat /etc/apt/sources.list | grep -q '^deb .*'"$DISTRIB_CODENAME"'.*partner' || s
 
 if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
 
-    DOCKER_CODENAME=$DISTRIB_CODENAME
-
-    # temporary workaround until Docker adds support for bionic
-    [ "$DISTRIB_CODENAME" == "bionic" ] && DOCKER_CODENAME=artful
-
     wget -O - https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - || exit 1
-    echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $DOCKER_CODENAME stable" | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null || exit 1
+    echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $DISTRIB_CODENAME stable" | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null || exit 1
 
 fi
 
@@ -154,27 +149,72 @@ fi
 
 echo -e "Installing everything you might need...\n"
 
+function apt_get {
+
+    for p in "$@"; do
+
+        if ! dpkg -s $p >/dev/null 2>&1; then
+
+            APT_GET_PENDING+=($p)
+
+        fi
+
+    done
+
+}
+
+function apt_remove {
+
+    for p in "$@"; do
+
+        if dpkg -s $p >/dev/null 2>&1; then
+
+            APT_REMOVE_PENDING+=($p)
+
+        fi
+
+    done
+
+}
+
+function do_apt_get {
+
+    if [ "${#APT_GET_PENDING[@]}" -gt "0" ]; then
+
+        sudo apt-get -y install "${APT_GET_PENDING[@]}" || exit 1
+
+        APT_GET_PENDING=()
+
+    fi
+
+    if [ "${#APT_REMOVE_PENDING[@]}" -gt "0" ]; then
+
+        sudo apt-get -y purge "${APT_REMOVE_PENDING[@]}" || exit 1
+
+        APT_REMOVE_PENDING=()
+
+    fi
+
+}
+
+APT_GET_PENDING=()
+APT_REMOVE_PENDING=()
+
 # virtualisation
-sudo apt-get -y install \
+apt_get \
     docker-ce \
     virtualbox-5.2 \
-    || exit 1
-
-sudo adduser "$USER" vboxusers || exit 1
-sudo groupadd -f docker || exit 1
-sudo adduser "$USER" docker || exit 1
 
 # laptop power management; see http://linrunner.de/en/tlp/docs/tlp-linux-advanced-power-management.html
-sudo apt-get -y install \
+apt_get \
     acpi-call-dkms \
     dkms \
     tlp \
     tlp-rdw \
     tp-smapi-dkms \
-    || exit 1
 
 # system / network / terminal utilities
-sudo apt-get -y install \
+apt_get \
     aptitude \
     attr \
     debconf-utils \
@@ -191,72 +231,59 @@ sudo apt-get -y install \
     trickle \
     vim \
     whois \
-    || exit 1
 
 # package / dependency managers
-sudo apt-get -y install \
+apt_get \
     flatpak \
     yarn \
-    || exit 1
-
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || exit 1
 
 # Pandoc
-sudo apt-get -y install \
+apt_get \
     pandoc \
     texlive-fonts-recommended \
     texlive-latex-recommended \
-    || exit 1
 
 # PDF manipulation
-sudo apt-get -y install \
+apt_get \
     ghostscript \
-    || exit 1
 
-if dpkg -s pdftk >/dev/null 2>&1; then
-
-    echo -e "Removing pdftk...\n"
-
-    sudo apt-get -y purge pdftk
-
-fi
+apt_remove \
+    pdftk \
 
 # indicator-based apps
-sudo apt-get -y install \
+apt_get \
     autokey-gtk \
     blueman \
     shutter \
-    || exit 1
 
 if [ "$DISTRIB_CODENAME" == "xenial" ]; then
 
-    sudo apt-get -y install \
+    apt_get \
         caffeine \
         indicator-multiload \
-        || exit 1
 
 else
 
-    sudo apt-get -y install \
+    apt_get \
         copyq \
         gnome-shell-extension-caffeine \
-        gnome-shell-extension-pixelsaver \
         gnome-shell-extension-system-monitor \
-        || exit 1
+
+    apt_remove \
+        gnome-shell-extension-pixelsaver \
 
 fi
 
 # utility apps
-sudo apt-get -y install \
+apt_get \
     dconf-editor \
     remmina \
     speedcrunch \
     usb-creator-gtk \
     x11vnc \
-    || exit 1
 
 # desktop essentials
-sudo apt-get -y install \
+apt_get \
     filezilla \
     firefox \
     fonts-symbola \
@@ -280,17 +307,15 @@ sudo apt-get -y install \
     thunderbird \
     typora \
     vlc \
-    || exit 1
 
 # photography
-sudo apt-get -y install \
+apt_get \
     geeqie \
     libmediainfo0v5 \
     rapid-photo-downloader \
-    || exit 1
 
 # development
-sudo apt-get -y install \
+apt_get \
     build-essential \
     git \
     nodejs \
@@ -317,33 +342,29 @@ sudo apt-get -y install \
     python-mysqldb \
     python-requests \
     ruby \
-    || exit 1
 
 if [ "$DISTRIB_CODENAME" == "xenial" ]; then
 
     # removed from PHP 7.2, which ships with bionic
-    sudo apt-get -y install \
+    apt_get \
         php-mcrypt \
-        || exit 1
 
 fi
 
 # services for development
-sudo apt-get -y install \
+apt_get \
     apache2 \
     libapache2-mod-php \
     mariadb-server \
-    || exit 1
 
 # desktop apps for development
-sudo apt-get -y install \
+apt_get \
     meld \
     mysql-workbench \
     sublime-text \
-    || exit 1
 
 # needed for MakeMKV (see: http://www.makemkv.com/forum2/viewtopic.php?f=3&t=224)
-sudo apt-get -y install \
+apt_get \
     pkg-config \
     libc6-dev \
     libssl-dev \
@@ -352,33 +373,34 @@ sudo apt-get -y install \
     libgl1-mesa-dev \
     libqt4-dev \
     zlib1g-dev \
-    || exit 1
 
 # needed for Synergy installation
-sudo apt-get -y install \
+apt_get \
     libavahi-compat-libdnssd1 \
-    || exit 1
 
 # needed for Db2 installation
-sudo apt-get -y install \
+apt_get \
     libpam0g:i386 \
-    || exit 1
 
 # needed for Cisco AnyConnect client
-sudo apt-get -y install \
+apt_get \
     lib32ncurses5 \
     lib32z1 \
     libpangox-1.0-0 \
     network-manager-openconnect \
-    || exit 1
 
-if dpkg -s deja-dup >/dev/null 2>&1; then
+apt_remove deja-dup
 
-    echo -e "Removing deja-dup...\n"
+do_apt_get
 
-    sudo apt-get -y purge deja-dup
+echo -e "Applying post-install tweaks...\n"
 
-fi
+sudo adduser "$USER" vboxusers || exit 1
+sudo groupadd -f docker || exit 1
+sudo adduser "$USER" docker || exit 1
+
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || exit 1
+
 
 mkdir -p "$HOME/Downloads/install" || exit 1
 
@@ -673,14 +695,16 @@ if [ "$DISTRIB_CODENAME" == "xenial" ]; then
 
     gsettings set com.canonical.Unity.Launcher launcher-position Bottom
 
-    sudo apt-get -y install unity-tweak-tool || exit 1
+    apt_get unity-tweak-tool
+    do_apt_get
 
 elif [ "$DISTRIB_CODENAME" == "bionic" ]; then
 
     gsettings set org.gnome.shell.extensions.dash-to-dock dock-position BOTTOM
     gsettings set org.gnome.shell.extensions.dash-to-dock show-apps-at-top true
 
-    sudo apt-get -y install gnome-tweak-tool || exit 1
+    apt_get gnome-tweak-tool
+    do_apt_get
 
 fi
 
