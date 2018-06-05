@@ -277,6 +277,7 @@ fi
 # utility apps
 apt_get \
     dconf-editor \
+    gconf-editor \
     remmina \
     speedcrunch \
     usb-creator-gtk \
@@ -690,23 +691,26 @@ fi
 # GitKraken supports KDiff, but not Meld, so ...
 command -v kdiff3 >/dev/null 2>&1 || sudo ln -s /usr/bin/meld /usr/local/bin/kdiff3
 
-# move launcher to bottom
-if [ "$DISTRIB_CODENAME" == "xenial" ]; then
+if [ "$XDG_CURRENT_DESKTOP" == "Unity" ]; then
 
     gsettings set com.canonical.Unity.Launcher launcher-position Bottom
 
     apt_get unity-tweak-tool
-    do_apt_get
 
-elif [ "$DISTRIB_CODENAME" == "bionic" ]; then
+elif [ "$XDG_CURRENT_DESKTOP" == "ubuntu:GNOME" ]; then
 
     gsettings set org.gnome.shell.extensions.dash-to-dock dock-position BOTTOM
     gsettings set org.gnome.shell.extensions.dash-to-dock show-apps-at-top true
 
     apt_get gnome-tweak-tool
-    do_apt_get
+
+elif [ "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
+
+    apt_get docky
 
 fi
+
+do_apt_get
 
 echo -e "\n\nDone. To complete the installation of libdvdcss, you may need to run: sudo dpkg-reconfigure libdvd-pkg"
 
