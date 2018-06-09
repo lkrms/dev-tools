@@ -642,17 +642,17 @@ sudo a2enmod vhost_alias
 
 sudo service apache2 restart
 
+echo -e "Configuring VNC...\n"
+
+if [ ! -f "$HOME/.vnc/passwd" ]; then
+
+    echo -e "\nNo password has been set for VNC. Please provide one.\n\n"
+    x11vnc -storepasswd
+
+fi
+
 # x11vnc can't currently be configured to start before login on bionic; see http://c-nergy.be/blog/?p=8984
-if [ "$DISTRIB_CODENAME" == "xenial" ]; then
-
-    echo -e "Configuring VNC...\n"
-
-    if [ ! -f "$HOME/.vnc/passwd" ]; then
-
-        echo -e "\nNo password has been set for VNC. Please provide one.\n\n"
-        x11vnc -storepasswd
-
-    fi
+if [ "$DISTRIB_CODENAME" == "xenial" -o "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
 
     if [ ! -f /lib/systemd/system/x11vnc.service ]; then
 
