@@ -280,6 +280,7 @@ apt_get \
     gconf-editor \
     remmina \
     speedcrunch \
+    synergy \
     usb-creator-gtk \
     x11vnc \
 
@@ -374,10 +375,6 @@ apt_get \
     libgl1-mesa-dev \
     libqt4-dev \
     zlib1g-dev \
-
-# needed for Synergy installation
-apt_get \
-    libavahi-compat-libdnssd1 \
 
 # needed for Db2 installation
 apt_get \
