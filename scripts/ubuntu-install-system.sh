@@ -205,7 +205,7 @@ apt_get \
     docker-ce \
     virtualbox-5.2 \
 
-# laptop power management; see http://linrunner.de/en/tlp/docs/tlp-linux-advanced-power-management.html
+# power management; see http://linrunner.de/en/tlp/docs/tlp-linux-advanced-power-management.html
 apt_get \
     acpi-call-dkms \
     dkms \
@@ -256,21 +256,10 @@ apt_get \
     blueman \
     shutter \
 
-if [ "$DISTRIB_CODENAME" == "xenial" ]; then
-
-    apt_get \
-        caffeine \
-        indicator-multiload \
-
-else
+if [ "$DISTRIB_CODENAME" != "xenial" ]; then
 
     apt_get \
         copyq \
-        gnome-shell-extension-caffeine \
-        gnome-shell-extension-system-monitor \
-
-    apt_remove \
-        gnome-shell-extension-pixelsaver \
 
 fi
 
@@ -692,18 +681,31 @@ if [ "$XDG_CURRENT_DESKTOP" == "Unity" ]; then
 
     gsettings set com.canonical.Unity.Launcher launcher-position Bottom
 
-    apt_get unity-tweak-tool
+    apt_get \
+        caffeine \
+        indicator-multiload \
+        unity-tweak-tool \
 
 elif [ "$XDG_CURRENT_DESKTOP" == "ubuntu:GNOME" ]; then
 
     gsettings set org.gnome.shell.extensions.dash-to-dock dock-position BOTTOM
     gsettings set org.gnome.shell.extensions.dash-to-dock show-apps-at-top true
 
-    apt_get gnome-tweak-tool
+    apt_get \
+        gnome-shell-extension-caffeine \
+        gnome-shell-extension-system-monitor \
+        gnome-tweak-tool \
+
+    apt_remove \
+        gnome-shell-extension-pixelsaver \
 
 elif [ "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
 
-    apt_get docky
+    apt_get \
+        autorandr \
+        disper \
+        docky \
+        indicator-multiload \
 
 fi
 
