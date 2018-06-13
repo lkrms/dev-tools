@@ -706,6 +706,7 @@ elif [ "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
         disper \
         docky \
         indicator-multiload \
+        seahorse \
 
 fi
 
