@@ -29,11 +29,13 @@ sudo apt-get update || exit 1
 sudo apt-get -y dist-upgrade || exit 1
 sudo snap refresh || exit 1
 
-echo -e "Installing missing drivers...\n"
-
+# disabled due to issues with nvidia drivers
+#
+#echo -e "Installing missing drivers...\n"
+#
 DRIVER_ERRORS=0
-
-sudo ubuntu-drivers autoinstall || DRIVER_ERRORS=1
+#
+#sudo ubuntu-drivers autoinstall || DRIVER_ERRORS=1
 
 echo -e "Installing software-properties-common to get add-apt-repository...\n"
 
@@ -67,6 +69,19 @@ else
 fi
 
 cat /etc/apt/sources.list | grep -q '^deb .*'"$DISTRIB_CODENAME"'.*partner' || sudo add-apt-repository -y "deb http://archive.canonical.com/ubuntu $DISTRIB_CODENAME partner"
+
+# enable manual installation of "proposed" packages
+cat /etc/apt/sources.list | grep -q '^deb .*'"$DISTRIB_CODENAME"'-proposed' || sudo add-apt-repository -y "deb http://archive.ubuntu.com/ubuntu/ ${DISTRIB_CODENAME}-proposed restricted main multiverse universe"
+
+if [ ! -f /etc/apt/preferences.d/proposed-updates ]; then
+
+    sudo tee "/etc/apt/preferences.d/proposed-updates" >/dev/null <<EOF
+Package: *
+Pin: release a=${DISTRIB_CODENAME}-proposed
+Pin-Priority: 400
+EOF
+
+fi
 
 if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
 
@@ -268,7 +283,7 @@ apt_get \
     dconf-editor \
     gconf-editor \
     remmina \
-    speedcrunch \
+    seahorse \
     synergy \
     usb-creator-gtk \
     x11vnc \
@@ -294,6 +309,7 @@ apt_get \
     mkvtoolnix-gui \
     owncloud-client \
     scribus \
+    speedcrunch \
     spotify-client \
     thunderbird \
     typora \
@@ -377,6 +393,7 @@ apt_get \
     network-manager-openconnect \
 
 apt_remove deja-dup
+apt_remove apport
 
 do_apt_get
 
@@ -388,7 +405,6 @@ sudo adduser "$USER" docker || exit 1
 
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || exit 1
 
-
 mkdir -p "$HOME/Downloads/install" || exit 1
 
 pushd "$HOME/Downloads/install" >/dev/null
@@ -396,7 +412,7 @@ pushd "$HOME/Downloads/install" >/dev/null
 # delete package files more than 24 hours old
 find . -maxdepth 1 -type f -name '*.deb' -mtime +1 -delete
 
-wget -c --no-use-server-timestamps http://get.code-industry.net/public/master-pdf-editor-4.3.89_qt5.amd64.deb || exit 1
+wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-5.0.28_qt5.amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://github.com/saenzramiro/rambox/releases/download/0.5.17/Rambox_0.5.17-x64.deb || exit 1
@@ -405,7 +421,7 @@ wget -c --no-use-server-timestamps https://release.gitkraken.com/linux/gitkraken
 
 if [ "$DISTRIB_CODENAME" == "xenial" ]; then
 
-    wget -c --no-use-server-timestamps https://downloads.slack-edge.com/linux_releases/slack-desktop-3.1.1-amd64.deb || exit 1
+    wget -c --no-use-server-timestamps https://downloads.slack-edge.com/linux_releases/slack-desktop-3.2.1-amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://github.com/hluk/CopyQ/releases/download/v3.1.1/copyq_3.1.1_Ubuntu_16.04-1_amd64.deb || exit 1
 
 fi
@@ -706,7 +722,6 @@ elif [ "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
         disper \
         docky \
         indicator-multiload \
-        seahorse \
 
 fi
 
