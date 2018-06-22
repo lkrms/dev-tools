@@ -22,13 +22,5 @@ brew install \
     youtube-dl \
     || exit 2
 
-brew cask install mactex || exit 2
-
-if [ ! -e /usr/local/bin/pdflatex -a -e /Library/TeX/Root/bin/x86_64-darwin/pdflatex ]; then
-
-    ln -s /Library/TeX/Root/bin/x86_64-darwin/pdflatex /usr/local/bin/pdflatex
-
-fi
-
 echo -e "\n\nDone. If you need to mount ext4 volumes on your Mac, please also run: brew cask install osxfuse && brew install ext4fuse"
 
