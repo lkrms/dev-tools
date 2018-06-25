@@ -41,7 +41,7 @@ function main_loop {
     done
 
     # extract any tar files
-    find "$1" -maxdepth 1 \( -iname '*.tar' -o -iname '*.tar.*' \) -type f -print0 | while read -d $'\0' TAR; do
+    find "$1" -maxdepth 1 \( -iname '*.tar' -o -iname '*.tar.*' -o -iname '*.tbz2' \) -type f -print0 | while read -d $'\0' TAR; do
 
         TAR_NAME="$(basename "$TAR")"
 

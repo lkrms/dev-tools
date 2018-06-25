@@ -13,10 +13,11 @@ brew install \
     ant \
     mariadb \
     node@8 \
-    yarn \
     || exit 2
 
 brew link --force node@8 || exit 2
+
+brew install yarn --ignore-dependencies
 
 brew cask install mactex || exit 2
 
