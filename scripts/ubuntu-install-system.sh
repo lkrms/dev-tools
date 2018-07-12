@@ -412,6 +412,7 @@ pushd "$HOME/Downloads/install" >/dev/null
 # delete package files more than 24 hours old
 find . -maxdepth 1 -type f -name '*.deb' -mtime +1 -delete
 
+wget -c --no-use-server-timestamps --content-disposition https://go.microsoft.com/fwlink/?LinkID=760868 || exit 1
 wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-5.0.28_qt5.amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
