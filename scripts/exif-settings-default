@@ -1,0 +1,17 @@
+# by default, this folder will be searched recursively for photos to exif-ify
+PHOTOS_ROOT="$HOME/Photos.new"
+
+# values to apply via exif-apply-copyright.sh
+EXIF_COPYRIGHT='© $CreateDate LINA Creative'
+EXIF_USAGE_TERMS="All rights reserved."
+EXIF_COPYRIGHT_INFO_URL="https://linacreative.com"
+EXIF_CREATOR="Luke Arms"
+EXIF_CREATOR_ADDRESS="PO Box 886"
+EXIF_CREATOR_CITY="Charlestown"
+EXIF_CREATOR_COUNTRY="Australia"
+EXIF_CREATOR_EMAIL="luke@linacreative.com"
+EXIF_CREATOR_PHONE="+61 407 049 650"
+EXIF_CREATOR_POSTAL_CODE="2290"
+EXIF_CREATOR_REGION="NSW"
+EXIF_CREATOR_URL="https://linacreative.com"
+

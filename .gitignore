@@ -1,3 +1,4 @@
 *.sublime-*
+scripts/exif-settings
 scripts/handbrake-settings
 scripts/log/*.log
