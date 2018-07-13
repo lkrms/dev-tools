@@ -42,10 +42,10 @@ find "$PHOTOS_ROOT" -type f \( -iname '*.nef' \) -print0 | while read -d $'\0' P
     fi
 
     # populate sidecar with metadata from file
-    exiftool -tagsFromFile "$PHOTO_FILE" "$XMP_FILE"
+    exiftool -tagsFromFile "$PHOTO_FILE" -overwrite_original "$XMP_FILE"
 
     # apply copyright metadata to sidecar
-    exiftool -d %Y \
+    exiftool -overwrite_original -d %Y \
         -Marked=true \
         '-Copyright<'"$EXIF_COPYRIGHT" \
         "-UsageTerms=$EXIF_USAGE_TERMS" \
