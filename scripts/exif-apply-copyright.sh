@@ -2,7 +2,17 @@
 
 SCRIPT_DIR="$(cd "$(dirname "$0")"; pwd)"
 
-. "$SCRIPT_DIR/exif-settings" || . "$SCRIPT_DIR/exif-settings-default" || exit 2
+SKIP_EXISTING=0
+
+if [ -e "$SCRIPT_DIR/exif-settings" ]; then
+
+    . "$SCRIPT_DIR/exif-settings"
+
+else
+
+    . "$SCRIPT_DIR/exif-settings-default" || exit 2
+
+fi
 
 if [ -n "$1" ]; then
 
@@ -23,7 +33,7 @@ find "$PHOTOS_ROOT" -type f \( -iname '*.nef' \) -print0 | while read -d $'\0' P
 
     XMP_FILE="${PHOTO_FILE%.*}.xmp"
 
-    if [ -e "$XMP_FILE" ]; then
+    if [ -e "$XMP_FILE" -a "$SKIP_EXISTING" -ne "0" ]; then
 
         echo "Skipping (XMP file already exists): $PHOTO_FILE"
 
@@ -31,8 +41,11 @@ find "$PHOTOS_ROOT" -type f \( -iname '*.nef' \) -print0 | while read -d $'\0' P
 
     fi
 
-    exiftool -tagsFromFile "$PHOTO_FILE" \
-        -d %Y \
+    # populate sidecar with metadata from file
+    exiftool -tagsFromFile "$PHOTO_FILE" "$XMP_FILE"
+
+    # apply copyright metadata to sidecar
+    exiftool -d %Y \
         -Marked=true \
         '-Copyright<'"$EXIF_COPYRIGHT" \
         "-UsageTerms=$EXIF_USAGE_TERMS" \
