@@ -1,6 +1,15 @@
 # by default, this folder will be searched recursively for photos to exif-ify
 PHOTOS_ROOT="$HOME/Photos.new"
 
+# where should extracted previews go?
+EXPORTS_ROOT="$HOME/Exports/Web/Photocart"
+
+# previews are downsampled to ...
+EXPORT_GEOMETRY="1440x1440"
+
+# JPEG quality (after downsampling)
+EXPORT_QUALITY=85
+
 # values to apply via exif-apply-copyright.sh
 EXIF_COPYRIGHT='© $CreateDate LINA Creative'
 EXIF_USAGE_TERMS="All rights reserved."

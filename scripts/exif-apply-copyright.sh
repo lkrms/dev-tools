@@ -3,6 +3,7 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")"; pwd)"
 
 SKIP_EXISTING=0
+COPY_EXIF_FROM_SOURCE=0
 
 if [ -e "$SCRIPT_DIR/exif-settings" ]; then
 
@@ -41,8 +42,12 @@ find "$PHOTOS_ROOT" -type f \( -iname '*.nef' \) -print0 | while read -d $'\0' P
 
     fi
 
-    # populate sidecar with metadata from file
-    exiftool -tagsFromFile "$PHOTO_FILE" -overwrite_original "$XMP_FILE"
+    if [ "$COPY_EXIF_FROM_SOURCE" -ne "0" ]; then
+
+        # populate sidecar with metadata from file
+        exiftool -overwrite_original -tagsFromFile "$PHOTO_FILE" "$XMP_FILE"
+
+    fi
 
     # apply copyright metadata to sidecar
     exiftool -overwrite_original -d %Y \
