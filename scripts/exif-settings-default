@@ -11,7 +11,7 @@ EXPORT_GEOMETRY="1440x1440"
 EXPORT_QUALITY=85
 
 # lower this number if your computer grinds to a halt
-MAX_PROCESSES=10
+MAX_PROCESSES=20
 
 # values to apply via exif-apply-copyright.sh
 EXIF_COPYRIGHT='© $CreateDate LINA Creative'
