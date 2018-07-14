@@ -10,6 +10,9 @@ EXPORT_GEOMETRY="1440x1440"
 # JPEG quality (after downsampling)
 EXPORT_QUALITY=85
 
+# lower this number if your computer grinds to a halt
+MAX_PROCESSES=10
+
 # values to apply via exif-apply-copyright.sh
 EXIF_COPYRIGHT='© $CreateDate LINA Creative'
 EXIF_USAGE_TERMS="All rights reserved."

@@ -30,7 +30,7 @@ fi
 
 command -v exiftool >/dev/null 2>&1 || { echo "Error: exiftool not found"; exit 1; }
 
-find "$PHOTOS_ROOT" -type f \( -iname '*.nef' \) -print0 | while read -d $'\0' PHOTO_FILE; do
+while read -d $'\0' PHOTO_FILE; do
 
     XMP_FILE="${PHOTO_FILE%.*}.xmp"
 
@@ -42,29 +42,46 @@ find "$PHOTOS_ROOT" -type f \( -iname '*.nef' \) -print0 | while read -d $'\0' P
 
     fi
 
+    TAG_TO_COPY="-CreateDate"
+
     if [ "$COPY_EXIF_FROM_SOURCE" -ne "0" ]; then
 
-        # populate sidecar with metadata from file
-        exiftool -overwrite_original -tagsFromFile "$PHOTO_FILE" "$XMP_FILE"
+        TAG_TO_COPY=
 
     fi
 
-    # apply copyright metadata to sidecar
-    exiftool -overwrite_original -d %Y \
-        -Marked=true \
-        '-Copyright<'"$EXIF_COPYRIGHT" \
-        "-UsageTerms=$EXIF_USAGE_TERMS" \
-        "-WebStatement=$EXIF_COPYRIGHT_INFO_URL" \
-        "-Creator=$EXIF_CREATOR" \
-        "-CreatorAddress=$EXIF_CREATOR_ADDRESS" \
-        "-CreatorCity=$EXIF_CREATOR_CITY" \
-        "-CreatorCountry=$EXIF_CREATOR_COUNTRY" \
-        "-CreatorWorkEmail=$EXIF_CREATOR_EMAIL" \
-        "-CreatorWorkTelephone=$EXIF_CREATOR_PHONE" \
-        "-CreatorPostalCode=$EXIF_CREATOR_POSTAL_CODE" \
-        "-CreatorRegion=$EXIF_CREATOR_REGION" \
-        "-CreatorWorkURL=$EXIF_CREATOR_URL" \
-        "$XMP_FILE"
+    # keep our subprocesses in check
+    while [ "$(jobs -p | wc -l)" -gt "$MAX_PROCESSES" ]; do
 
-done
+        sleep 1;
 
+    done
+
+    (
+        # populate sidecar with metadata from file
+        exiftool -overwrite_original -tagsFromFile "$PHOTO_FILE" $TAG_TO_COPY "$XMP_FILE"
+
+        # apply copyright metadata to sidecar
+        exiftool -overwrite_original -d %Y \
+            -Marked=true \
+            '-Copyright<'"$EXIF_COPYRIGHT" \
+            "-UsageTerms=$EXIF_USAGE_TERMS" \
+            "-WebStatement=$EXIF_COPYRIGHT_INFO_URL" \
+            "-Creator=$EXIF_CREATOR" \
+            "-CreatorAddress=$EXIF_CREATOR_ADDRESS" \
+            "-CreatorCity=$EXIF_CREATOR_CITY" \
+            "-CreatorCountry=$EXIF_CREATOR_COUNTRY" \
+            "-CreatorWorkEmail=$EXIF_CREATOR_EMAIL" \
+            "-CreatorWorkTelephone=$EXIF_CREATOR_PHONE" \
+            "-CreatorPostalCode=$EXIF_CREATOR_POSTAL_CODE" \
+            "-CreatorRegion=$EXIF_CREATOR_REGION" \
+            "-CreatorWorkURL=$EXIF_CREATOR_URL" \
+            "$XMP_FILE"
+
+    ) >/dev/null &
+
+    echo "Processing ${PHOTO_FILE}..."
+
+done < <(find "$PHOTOS_ROOT" -type f \( -iname '*.nef' \) -print0 | sort -z)
+
+wait

@@ -28,7 +28,7 @@ fi
 command -v exiftool >/dev/null 2>&1 || { echo "Error: exiftool not found"; exit 1; }
 command -v exiftran >/dev/null 2>&1 || { echo "Error: exiftran not found"; exit 1; }
 
-find "$PHOTOS_ROOT" -type f \( -iname '*.nef' \) -print0 | sort -z | while read -d $'\0' PHOTO_FILE; do
+while read -d $'\0' PHOTO_FILE; do
 
     if [ -n "$2" ]; then
 
@@ -45,18 +45,30 @@ find "$PHOTOS_ROOT" -type f \( -iname '*.nef' \) -print0 | sort -z | while read 
     XMP_FILE="${PHOTO_FILE%.*}.xmp"
     TARGET_FILE="$EXPORTS_ROOT/$TARGET_FOLDER/$(basename "${PHOTO_FILE%.*}.jpg")"
 
-    # extract the JPEG
-    exiftool -b -JpgFromRaw "$PHOTO_FILE" > "$TARGET_FILE"
+    # keep our subprocesses in check
+    while [ "$(jobs -p | wc -l)" -gt "$MAX_PROCESSES" ]; do
 
-    # copy [necessary] metadata
-    exiftool -overwrite_original -tagsFromFile "$PHOTO_FILE" -Orientation "$TARGET_FILE"
-    [ -e "$XMP_FILE" ] && exiftool -overwrite_original -tagsFromFile "$XMP_FILE" "$TARGET_FILE"
+        sleep 1;
 
-    # rotate the JPEG if needed
-    exiftran -ai "$TARGET_FILE"
+    done
 
-    # downsample for online proofing etc.
-    convert "$TARGET_FILE" -scale "$EXPORT_GEOMETRY" -interpolate bicubic -quality $EXPORT_QUALITY "$TARGET_FILE"
+    (
+        # extract the JPEG
+        exiftool -b -JpgFromRaw "$PHOTO_FILE" > "$TARGET_FILE"
 
-done
+        # copy [necessary] metadata
+        exiftool -overwrite_original -tagsFromFile "$PHOTO_FILE" -Orientation "$TARGET_FILE"
+        [ -e "$XMP_FILE" ] && exiftool -overwrite_original -tagsFromFile "$XMP_FILE" "$TARGET_FILE"
 
+        # rotate the JPEG if needed
+        exiftran -ai "$TARGET_FILE"
+
+        # downsample for online proofing etc.
+        convert "$TARGET_FILE" -scale "$EXPORT_GEOMETRY" -interpolate bicubic -quality $EXPORT_QUALITY "$TARGET_FILE"
+    ) >/dev/null 2>&1 &
+
+    echo "Processing ${PHOTO_FILE} to ${TARGET_FILE}..."
+
+done < <(find "$PHOTOS_ROOT" -type f \( -iname '*.nef' \) -print0 | sort -z)
+
+wait
