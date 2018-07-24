@@ -116,8 +116,10 @@ foreach ($files as $sourceFile)
     }
 
     // round duration up
-    $duration  = (int)ceil(((float)$info->media [0]->track [0]->Duration) / 60);
-    $isTvShow  = (string)$info->media [0]->track [0]->ContentType == 'TV Show';
+    $duration = (int)ceil(((float)$info->media [0]->track [0]->Duration) / 60);
+
+    // this has been reliable so far -- could also check for "Season" element
+    $isTvShow = (string)$info->media [0]->track [0]->ContentType == 'TV Show';
 }
 
 // PRETTY_NESTED_ARRAYS,0
