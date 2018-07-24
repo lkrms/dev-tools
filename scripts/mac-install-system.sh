@@ -97,6 +97,7 @@ package_get "LibreOffice*.dmg" "/Applications/LibreOffice.app"
 package_get "moom*.dmg" "/Applications/Moom.app"
 package_get "ownCloud*.pkg" "com.ownCloud.client" 1
 package_get "sequel-pro*.dmg" "/Applications/Sequel Pro.app"
+package_get "Skype*.dmg" "/Applications/Skype.app"
 package_get "SonosDesktopController*.dmg" "/Applications/Sonos.app"
 package_get "Sourcetree*.zip" "/Applications/Sourcetree.app"
 package_get "Subler*.zip" "/Applications/Subler.app"
