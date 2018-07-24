@@ -366,6 +366,7 @@ apt_get \
 
 # desktop apps for development
 apt_get \
+    git-cola \
     meld \
     mysql-workbench \
     sublime-text \
