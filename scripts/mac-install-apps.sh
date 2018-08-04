@@ -56,11 +56,24 @@ function main_loop {
     find "$1" -maxdepth 1 -iname '*.dmg' -type f -exec hdiutil attach -mountroot "$MOUNT_ROOT" '{}' \;
 
     # look for .apps to install
-    find "$MOUNT_ROOT" -mindepth 2 -maxdepth 2 -iname '*.app' -type d -print0 | while read -d $'\0' APP; do
+    find "$MOUNT_ROOT" -mindepth 2 -maxdepth 3 -iname '*.app' -type d -print0 | sort -z | while read -d $'\0' APP; do
+
+        APP_TARGET_DIR="/Applications/"
+
+        # determine if we have multiple apps in the same folder / image
+        APP_DIR="$(dirname "$APP")"
+        APP_COUNT="$(find "$APP_DIR" -maxdepth 1 -iname '*.app' -type d | wc -l | tr -d '[:space:]')"
+
+        if [ "$APP_COUNT" -gt "1" ]; then
+
+            APP_TARGET_DIR="/Applications/$(basename "$APP_DIR")/"
+            sudo mkdir -p "$APP_TARGET_DIR"
+
+        fi
 
         APP_NAME="$(basename "$APP")"
 
-        if [ -e "/Applications/$APP_NAME" ]; then
+        if [ -e "${APP_TARGET_DIR}${APP_NAME}" ]; then
 
             echo "$APP_NAME is already installed. Skipping."
             continue
@@ -68,7 +81,7 @@ function main_loop {
         fi
 
         echo "Installing $APP_NAME..."
-        sudo cp -Rp "$APP" /Applications/
+        sudo cp -Rp "$APP" "$APP_TARGET_DIR"
 
         echo "Done installing $APP_NAME."
 
@@ -90,7 +103,7 @@ function main_loop {
 
 function install_pkgs {
 
-    find "$1" -mindepth $2 -maxdepth $2 -iname '*.pkg' -type f -print0 | while read -d $'\0' PKG; do
+    find "$1" -mindepth $2 -maxdepth $2 -iname '*.pkg' -type f -print0 | sort -z | while read -d $'\0' PKG; do
 
         PKG_NAME="$(basename "$PKG")"
 
@@ -110,5 +123,5 @@ main_loop "$1"
 rm -Rf "$MOUNT_ROOT"
 
 echo "Lifting quarantine on downloaded apps..."
-find /Applications -maxdepth 1 -xattrname com.apple.quarantine -exec sudo xattr -dr com.apple.quarantine '{}' \;
+find /Applications -maxdepth 2 -xattrname com.apple.quarantine -exec sudo xattr -dr com.apple.quarantine '{}' \;
 
