@@ -79,7 +79,6 @@ function package_get {
 }
 
 package_get "Acorn*.zip" "/Applications/Acorn.app"
-package_get "anyconnect-macosx*.dmg" "com.cisco.pkg.anyconnect.vpn" 1
 package_get "AnyList*.zip" "/Applications/AnyList.app"
 package_get "Brother_PrinterDrivers_ColorLaser*.dmg" "com.Brother.Brotherdriver.Brother_PrinterDrivers_ColorLaser" 1
 package_get "Brother_PrinterDrivers_MonochromeLaser*.dmg" "com.Brother.Brotherdriver.Brother_PrinterDrivers_MonochromeLaser" 1
@@ -128,5 +127,5 @@ echo -e "Installing downloaded packages...\n"
 
 "$SCRIPT_DIR/mac-install-apps.sh" "$LOCAL_PATH"
 
-echo -e "\n\nDone. Please install Adobe Lightroom, Synergy if needed."
+echo -e "\n\nDone. Please install Adobe Lightroom, Synergy, VirtualBox, Cisco AnyConnect if needed."
 
