@@ -123,5 +123,5 @@ main_loop "$1"
 rm -Rf "$MOUNT_ROOT"
 
 echo "Lifting quarantine on downloaded apps..."
-find /Applications -maxdepth 2 -xattrname com.apple.quarantine -exec sudo xattr -dr com.apple.quarantine '{}' \;
+find /Applications -maxdepth 2 -xattrname com.apple.quarantine -ls -exec sudo xattr -dr com.apple.quarantine '{}' \;
 

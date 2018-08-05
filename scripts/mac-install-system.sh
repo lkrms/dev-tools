@@ -48,7 +48,7 @@ function package_get {
 
     else
 
-        [ -e "$2" ] && IS_INSTALLED=1
+        compgen -G "$2" >/dev/null && IS_INSTALLED=1
 
     fi
 
@@ -85,6 +85,7 @@ package_get "Brother_PrinterDrivers_ColorLaser*.dmg" "com.Brother.Brotherdriver.
 package_get "Brother_PrinterDrivers_MonochromeLaser*.dmg" "com.Brother.Brotherdriver.Brother_PrinterDrivers_MonochromeLaser" 1
 package_get "Caffeine*.zip" "/Applications/Caffeine.app"
 package_get "dbeaver-ce*.dmg" "/Applications/DBeaver.app"
+package_get "DisplayCAL*.dmg" '/Applications/DisplayCAL*'
 package_get "FileZilla*.tar.bz2" "/Applications/FileZilla.app"
 package_get "Firefox*.dmg" "/Applications/Firefox.app"
 package_get "Flycut*.zip" "/Applications/Flycut.app"
@@ -127,5 +128,5 @@ echo -e "Installing downloaded packages...\n"
 
 "$SCRIPT_DIR/mac-install-apps.sh" "$LOCAL_PATH"
 
-echo -e "\n\nDone. Please install Adobe Lightroom, DisplayCAL, Synergy if needed."
+echo -e "\n\nDone. Please install Adobe Lightroom, Synergy if needed."
 
