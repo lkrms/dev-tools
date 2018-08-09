@@ -22,5 +22,36 @@ brew install \
     youtube-dl \
     || exit 2
 
-echo -e "\n\nDone. If you need to mount ext4 volumes on your Mac, please also run: brew cask install osxfuse && brew install ext4fuse"
+read -p "Install developer tools? [y/n] " -n 1 -r INSTALL_DEV_TOOLS
+
+echo
+
+if [[ $INSTALL_DEV_TOOLS =~ ^[Yy]$ ]]; then
+
+    brew install \
+        ant \
+        autoconf \
+        mariadb \
+        node \
+        nvm \
+        yarn \
+        || exit 2
+
+fi
+
+read -p "Install TeX? [y/n] " -n 1 -r INSTALL_TEX
+
+echo
+
+if [[ $INSTALL_TEX =~ ^[Yy]$ ]]; then
+
+    brew cask install mactex || exit 2
+
+    if [ ! -e /usr/local/bin/pdflatex -a -e /Library/TeX/Root/bin/x86_64-darwin/pdflatex ]; then
+
+        ln -s /Library/TeX/Root/bin/x86_64-darwin/pdflatex /usr/local/bin/pdflatex
+
+    fi
+
+fi
 
