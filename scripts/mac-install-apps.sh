@@ -64,7 +64,7 @@ function main_loop {
         APP_DIR="$(dirname "$APP")"
         APP_COUNT="$(find "$APP_DIR" -maxdepth 1 -iname '*.app' -type d | wc -l | tr -d '[:space:]')"
 
-        if [ "$APP_COUNT" -gt "1" ]; then
+        if [ "$(basename "$APP_DIR")" != "zip" -a "$APP_COUNT" -gt "1" ]; then
 
             APP_TARGET_DIR="/Applications/$(basename "$APP_DIR")/"
             sudo mkdir -p "$APP_TARGET_DIR"
