@@ -39,6 +39,16 @@ if [[ $INSTALL_DEV_TOOLS =~ ^[Yy]$ ]]; then
 
 fi
 
+read -p "Install PowerShell? [y/n] " -n 1 -r INSTALL_POWERSHELL
+
+echo
+
+if [[ $INSTALL_POWERSHELL =~ ^[Yy]$ ]]; then
+
+    brew cask install powershell || exit 2
+
+fi
+
 read -p "Install TeX? [y/n] " -n 1 -r INSTALL_TEX
 
 echo
