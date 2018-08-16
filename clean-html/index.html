@@ -17,6 +17,18 @@ $(function () {
 
     }
 
+    function noAttributeFilter () {
+
+        return this.attributes.length < 1;
+
+    }
+
+    function textNodeFilter () {
+
+        return this.nodeType === 3;
+
+    }
+
     function whitespace () {
 
         return $.parseHTML(" ");
@@ -33,12 +45,22 @@ $(function () {
 
         var p = $("#target");
 
-        // if the entire source was wrapped in a single block, move everything up
-        p.children("div:only-child, p:only-child").each(function () {
+        // if the entire source was wrapped in one or more single blocks, move everything up
+        var replaced;
 
-            $(this).replaceWith($(this).contents());
+        do {
 
-        });
+            replaced = false;
+
+            p.children("div:only-child, p:only-child").each(function () {
+
+                replaced = true;
+
+                $(this).replaceWith($(this).contents());
+
+            });
+
+        } while (replaced);
 
         // remove nodes that aren't elements or text (e.g. comments)
         p.contents().filter(nodeFilter).remove();
@@ -54,6 +76,27 @@ $(function () {
 
         }).replaceWith(whitespace);
 
+        // text-based transformations go here
+        p.find("*").contents().filter(textNodeFilter).filter(function () {
+
+            return ! $(this).parents("a").length;
+
+        }).each(function () {
+
+            var text = $(this).text();
+            var originalText = text;
+
+            var re = /\b([a-z0-9._-]+@[a-z0-9._-]+\.[a-z0-9._-]+)\b/i;
+            text = text.replace(re, '<a href="mailto:$1">$1</a>');
+
+            if (text != originalText) {
+
+                $(this).replaceWith(text);
+
+            }
+
+        });
+
         // remove blocks with nothing but whitespace inside
         p.find("div, p").filter(function () {
 
@@ -61,8 +104,21 @@ $(function () {
 
         }).replaceWith(whitespace);
 
+        // clear unwanted attributes
+        p.find("[class]").removeAttr("class");
+        p.find("[dir]").removeAttr("dir");
+        p.find("[id]").removeAttr("id");
+        p.find("[lang]").removeAttr("lang");
+        p.find("[style]").removeAttr("style");
+
         // matched elements are removed from the tree, their children moved up to take their place
-        p.find("font, a[name], span[lang], span[style], li > p, a u").each(function () {
+        p.find("font, a[name], li > p, a u").not("a[href]").each(function () {
+
+            $(this).replaceWith($(this).contents());
+
+        });
+
+        p.find("span").filter(noAttributeFilter).each(function () {
 
             $(this).replaceWith($(this).contents());
 
@@ -138,18 +194,11 @@ $(function () {
 
         });
 
-        // clear any remaining unwanted attributes
-        p.find("[class]").removeAttr("class");
-        p.find("[dir]").removeAttr("dir");
-        p.find("[id]").removeAttr("id");
-        p.find("[lang]").removeAttr("lang");
-        p.find("[style]").removeAttr("style");
-
         // matched elements (at the top level only) get a spacer inserted after them
         p.children("div, p").each(function () {
 
             if (! $(this).next().is("ul, ol")
-                && ! $(this).prev().is("ul, ol")
+                //&& ! $(this).prev().is("ul, ol")
                 && ! ($(this).children().is("b:only-child, strong:only-child, i:only-child, em:only-child") && $(this).children().text().trim() == $(this).text().trim())
                 ) {
 
@@ -214,7 +263,9 @@ $(function () {
         var output = tidy_html5(p.html().replace(/[\r\n]+/g, " "), options);
 
         // replace commonly-used "curly quotes" with their corresponding entities
-        $("#output").val(output.replace(/\u201C/g, "&ldquo;").replace(/\u201D/g, "&rdquo;").replace(/\u2018/g, "&lsquo;").replace(/\u2019/g, "&rsquo;"));
+        //output = output.replace(/\u201C/g, "&ldquo;").replace(/\u201D/g, "&rdquo;").replace(/\u2018/g, "&lsquo;").replace(/\u2019/g, "&rsquo;");
+
+        $("#output").val(output);
 
     });
 
