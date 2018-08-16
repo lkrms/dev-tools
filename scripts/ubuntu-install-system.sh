@@ -451,8 +451,8 @@ command -v jsl >/dev/null 2>&1 || sudo ln -s /usr/bin/jslint /usr/local/bin/jsl
 echo -e "Updating all npm packages...\n"
 sudo npm update -g || exit 1
 
-echo -e "Installing flatpack packages...\n"
-flatpak install -y flathub org.baedert.corebird || exit 1
+#echo -e "Installing flatpack packages...\n"
+#flatpak install -y flathub org.baedert.corebird || exit 1
 
 echo -e "Updating all flatpak packages...\n"
 flatpak update || exit 1
