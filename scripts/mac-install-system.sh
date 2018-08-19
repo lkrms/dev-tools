@@ -90,7 +90,7 @@ package_get "Firefox*.dmg" "/Applications/Firefox.app"
 package_get "Flycut*.zip" "/Applications/Flycut.app"
 package_get "Geekbench-4*.dmg" "/Applications/Geekbench 4.app"
 package_get "googlechrome*.dmg" "/Applications/Google Chrome.app"
-package_get "HandBrake*.dmg" "/Applications/HandBrake.app"
+package_get "HandBrake-*.dmg" "/Applications/HandBrake.app"
 package_get "Hex_Fiend*.dmg" "/Applications/Hex Fiend.app"
 package_get "ImageOptim*.tbz2" "/Applications/ImageOptim.app"
 package_get "iTerm2*.zip" "/Applications/iTerm.app"
@@ -105,8 +105,10 @@ package_get "MacS1300iManager*.dmg" "jp.co.pfu.ScanSnap.*" 1
 package_get "MasterPDFEditor*.dmg" "/Applications/Master PDF Editor.app"
 package_get "moom*.dmg" "/Applications/Moom.app"
 package_get "ownCloud*.pkg" "com.ownCloud.client" 1
+package_get "pem*.dmg" "com.brother.P-touchEditor5.pkg" 1
 package_get "Pencil*.dmg" "/Applications/Pencil.app"
 package_get "PhoneView*.zip" "/Applications/PhoneView.app"
+package_get "pqdm*.dmg" "com.Brother.Brotherdriver.Brother_PrinterDrivers_Ptouch" 1
 package_get "scribus-*.dmg" "/Applications/Scribus.app"
 package_get "Scrivener*.dmg" "/Applications/Scrivener 2.app"
 package_get "sequel-pro*.dmg" "/Applications/Sequel Pro.app"
