@@ -155,6 +155,13 @@ if [ ! -f /etc/apt/sources.list.d/yarn.list ]; then
 
 fi
 
+if [ ! -f /etc/apt/sources.list.d/microsoft.list ]; then
+
+    wget -O - https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add - || exit 1
+    echo "deb [arch=amd64] https://packages.microsoft.com/ubuntu/$DISTRIB_RELEASE/prod $DISTRIB_CODENAME main" | sudo tee /etc/apt/sources.list.d/microsoft.list >/dev/null || exit 1
+
+fi
+
 if [ "$(cat /etc/apt/sources.list /etc/apt/sources.list.d/*.list)" != "$OLD_SOURCES" ]; then
 
     echo -e "Repositories have changed; running apt-get update...\n"
@@ -356,7 +363,13 @@ if [ "$DISTRIB_CODENAME" == "xenial" ]; then
 
     # removed from PHP 7.2, which ships with bionic
     apt_get \
+        powershell \
         php-mcrypt \
+
+else
+
+    apt_get \
+        powershell-preview \
 
 fi
 
@@ -416,7 +429,7 @@ pushd "$HOME/Downloads/install" >/dev/null
 find . -maxdepth 1 -type f -name '*.deb' -mtime +1 -delete
 
 wget -c --no-use-server-timestamps --content-disposition https://go.microsoft.com/fwlink/?LinkID=760868 || exit 1
-wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-5.0.28_qt5.amd64.deb || exit 1
+wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-5.1.12_qt5.amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://github.com/saenzramiro/rambox/releases/download/0.5.17/Rambox_0.5.17-x64.deb || exit 1
