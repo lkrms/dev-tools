@@ -39,6 +39,38 @@ $(function () {
 
     $("#convert").click(function () {
 
+        var defaultOptions = {
+            "blankTarget": true,
+            "deleteEmptyBlocks": true,
+            "replaceBlocks": "<div></div>",
+            "replaceHeadings": true,
+            "spacerBetweenBlocks": true
+        };
+
+        var wpOptions = {
+            "blankTarget": false,
+            "deleteEmptyBlocks": true,
+            "replaceBlocks": "<p></p>",
+            "replaceHeadings": false,
+            "spacerBetweenBlocks": false
+        };
+
+        var options;
+
+        switch ($("input[name=preset]:checked").val()) {
+
+            case "wp":
+
+                options = wpOptions;
+                break;
+
+            default:
+
+                options = defaultOptions;
+                break;
+
+        }
+
         $("#target").empty();
 
         $("#source").clone().contents().appendTo("#target");
@@ -98,11 +130,15 @@ $(function () {
         });
 
         // remove blocks with nothing but whitespace inside
-        p.find("div, p").filter(function () {
+        if (options.deleteEmptyBlocks) {
 
-            return $(this).text().trim() == "";
+            p.find("div, p").filter(function () {
 
-        }).replaceWith(whitespace);
+                return $(this).text().trim() == "";
+
+            }).replaceWith(whitespace);
+
+        }
 
         // clear unwanted attributes
         p.find("[class]").removeAttr("class");
@@ -184,29 +220,37 @@ $(function () {
         });
 
         // replace headings with <div><strong>
-        p.find("h1, h2, h3, h4, h5, h6").each(function () {
+        if (options.replaceHeadings) {
 
-            var div = $("<div><strong></strong></div>");
+            p.find("h1, h2, h3, h4, h5, h6").each(function () {
 
-            div.children().first().append($(this).contents());
+                var div = $("<div><strong></strong></div>");
 
-            $(this).replaceWith(div);
+                div.children().first().append($(this).contents());
 
-        });
+                $(this).replaceWith(div);
+
+            });
+
+        }
 
         // matched elements (at the top level only) get a spacer inserted after them
-        p.children("div, p").each(function () {
+        if (options.spacerBetweenBlocks) {
 
-            if (! $(this).next().is("ul, ol")
-                //&& ! $(this).prev().is("ul, ol")
-                && ! ($(this).children().is("b:only-child, strong:only-child, i:only-child, em:only-child") && $(this).children().text().trim() == $(this).text().trim())
-                ) {
+            p.children("div, p").each(function () {
 
-               $(this).after($("<div>&nbsp;</div>"))
+                if (! $(this).next().is("ul, ol")
+                    //&& ! $(this).prev().is("ul, ol")
+                    && ! ($(this).children().is("b:only-child, strong:only-child, i:only-child, em:only-child") && $(this).children().text().trim() == $(this).text().trim())
+                    ) {
 
-            }
+                   $(this).after($("<div>&nbsp;</div>"))
 
-        });
+                }
+
+            });
+
+        }
 
         // specify target=_blank for all links (except mailto's)
         p.find("a").each(function () {
@@ -224,11 +268,15 @@ $(function () {
         });
 
         // matched elements are replaced with divs
-        p.find("p").each(function () {
+        if (options.replaceBlocks) {
 
-            $(this).replaceWith($("<div></div>").append($(this).contents()));
+            p.find("div, p").each(function () {
 
-        });
+                $(this).replaceWith($(options.replaceBlocks).append($(this).contents()));
+
+            });
+
+        }
 
         // swap out <b> and <i> with <strong> and <em>
         p.find("b").each(function () {
@@ -244,7 +292,7 @@ $(function () {
         });
 
         // see http://api.html-tidy.org/tidy/quickref_5.6.0.html
-        var options = {
+        var tidyOptions = {
             "indent":               "auto",
             "indent-spaces":        2,
             "wrap":                 0,
@@ -260,7 +308,7 @@ $(function () {
         };
 
         // tidy_html5 strips line breaks, which means whitespace can be lost, so enforce whitespace
-        var output = tidy_html5(p.html().replace(/[\r\n]+/g, " "), options);
+        var output = tidy_html5(p.html().replace(/[\r\n]+/g, " "), tidyOptions);
 
         // replace commonly-used "curly quotes" with their corresponding entities
         //output = output.replace(/\u201C/g, "&ldquo;").replace(/\u201D/g, "&rdquo;").replace(/\u2018/g, "&lsquo;").replace(/\u2019/g, "&rsquo;");
@@ -277,5 +325,9 @@ $(function () {
 <div id="target" contenteditable="true"></div>
 <textarea id="output"></textarea>
 <button id="convert">Convert</button>
+<input type="radio" name="preset" value="swift" id="swiftPreset" checked />
+<label for="swiftPreset">Swift Digital</label>
+<input type="radio" name="preset" value="wp" id="wpPreset" />
+<label for="wpPreset">WordPress</label>
 </body>
 </html>
