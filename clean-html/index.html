@@ -146,6 +146,9 @@ $(function () {
         p.find("[id]").removeAttr("id");
         p.find("[lang]").removeAttr("lang");
         p.find("[style]").removeAttr("style");
+        p.find("[tabindex]").removeAttr("tabindex");
+        p.find("[title]").removeAttr("title");
+        p.find("a[rel]").removeAttr("rel");
 
         // matched elements are removed from the tree, their children moved up to take their place
         p.find("font, a[name], li > p, a u").not("a[href]").each(function () {
