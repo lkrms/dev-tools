@@ -294,6 +294,14 @@ LOG_FILE="$LOG_FILE_BASE.log"
 DRY_RUN=0
 FINISH_AFTER=0
 
+DATE_COMMAND=date
+
+if [ "$(uname -s)" == "Darwin" ]; then
+
+    DATE_COMMAND=gdate
+
+fi
+
 if [ "$1" == "dry" ]; then
 
     echo "DRY RUN: no files will be changed."
@@ -302,11 +310,11 @@ if [ "$1" == "dry" ]; then
 
 elif [ -n "$1" ]; then
 
-    FINISH_AFTER=$(date -d "$1" +'%s' 2>/dev/null) || { echo "Invalid time: $1"; exit 1; }
+    FINISH_AFTER=$("$DATE_COMMAND" -d "$1" +'%s' 2>/dev/null) || { echo "Invalid time: $1"; exit 1; }
 
     mkdir -p "$LOG_DIR" || exit 2
 
-    log_something "Queue processing will not continue after: $(date -d "@$FINISH_AFTER")"
+    log_something "Queue processing will not continue after: $("$DATE_COMMAND" -d "@$FINISH_AFTER")"
 
 else
 
