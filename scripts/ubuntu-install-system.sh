@@ -46,9 +46,11 @@ echo -e "Adding all required apt repositories...\n"
 OLD_SOURCES="$(cat /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null)"
 
 cat /etc/apt/sources.list.d/*.list 2>/dev/null | grep -q 'alexlarsson/flatpak' || sudo add-apt-repository -y ppa:alexlarsson/flatpak || exit 1
-cat /etc/apt/sources.list.d/*.list | grep -q 'atareao/atareao' || sudo add-apt-repository -y ppa:atareao/atareao || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'eosrei/fonts' || sudo add-apt-repository -y ppa:eosrei/fonts || exit 1
 cat /etc/apt/sources.list.d/*.list | grep -q 'stebbins/handbrake-releases' || sudo add-apt-repository -y ppa:stebbins/handbrake-releases || exit 1
+
+# touchpad-indicator
+cat /etc/apt/sources.list.d/*.list | grep -q 'atareao/atareao' || sudo add-apt-repository -y ppa:atareao/atareao || exit 1
 
 # Ghostwriter
 cat /etc/apt/sources.list.d/*.list | grep -q 'wereturtle/ppa' || sudo add-apt-repository -y ppa:wereturtle/ppa || exit 1
@@ -363,8 +365,10 @@ if [ "$DISTRIB_CODENAME" == "xenial" ]; then
 
     # removed from PHP 7.2, which ships with bionic
     apt_get \
-        powershell \
         php-mcrypt \
+
+    apt_get \
+        powershell \
 
 else
 
@@ -429,7 +433,7 @@ pushd "$HOME/Downloads/install" >/dev/null
 find . -maxdepth 1 -type f -name '*.deb' -mtime +1 -delete
 
 wget -c --no-use-server-timestamps --content-disposition https://go.microsoft.com/fwlink/?LinkID=760868 || exit 1
-wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-5.1.12_qt5.amd64.deb || exit 1
+wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-5.1.30_qt5.amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
 wget -c --no-use-server-timestamps https://github.com/saenzramiro/rambox/releases/download/0.5.17/Rambox_0.5.17-x64.deb || exit 1
