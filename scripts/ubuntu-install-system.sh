@@ -456,6 +456,7 @@ echo -e "Installing snaps...\n"
 if [ "$DISTRIB_CODENAME" != "xenial" ]; then
 
     sudo snap install slack --classic || exit 1
+    sudo snap install caprine --classic || exit 1
 
 fi
 
