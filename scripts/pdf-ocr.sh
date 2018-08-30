@@ -20,7 +20,7 @@ find . -type f -iname '*.pdf' -print0 | while read -d $'\0' file; do
 
         if ! grep -q '(ScanSnap Manager' "$file"; then
 
-            ORIGINAL_FILE="$(dirname "$file")/ssm.$(basename "$file")"
+            ORIGINAL_FILE="$(mktemp "/tmp/$(basename "$file").XXXXXXX")" || exit 2
             mv -v "$file" "$ORIGINAL_FILE" || exit 2
 
             if ! "$SET_CREATOR_SCRIPT" "$ORIGINAL_FILE" "$file" "ScanSnap Manager #S1300i"; then
