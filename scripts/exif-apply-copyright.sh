@@ -2,7 +2,10 @@
 
 SCRIPT_DIR="$(cd "$(dirname "$0")"; pwd)"
 
+# set to 1 if photos with pre-existing XMP sidecars should NOT have copyright information applied
 SKIP_EXISTING=0
+
+# set to 1 if ALL metadata should be copied to the XMP sidecar
 COPY_EXIF_FROM_SOURCE=0
 
 if [ -e "$SCRIPT_DIR/exif-settings" ]; then
