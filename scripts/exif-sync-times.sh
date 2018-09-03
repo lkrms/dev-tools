@@ -46,6 +46,7 @@ function inArray () {
 }
 
 SYNC_DIR=
+CAMERA_SERIAL_TAGS=()
 CAMERA_SERIALS=()
 CAMERA_TIMES=()
 TIME_SHIFTS=()
@@ -70,7 +71,7 @@ for SYNC_PHOTO in "$@"; do
 
     fi
 
-    SERIAL_NUMBER="$(exiftool -s3 $SERIAL_NUMBER_TAGS "$SYNC_PHOTO" | head -n1)"
+    SERIAL_NUMBER="$(exiftool -s2 $SERIAL_NUMBER_TAGS "$SYNC_PHOTO" | head -n1)"
     CREATE_TIME="$(exiftool -s3 -d '%Y-%m-%d %H:%M:%S' $GET_CREATE_TIME_TAGS "$SYNC_PHOTO" | head -n1)"
 
     if [ -z "$SERIAL_NUMBER" -o -z "$CREATE_TIME" ]; then
@@ -79,6 +80,9 @@ for SYNC_PHOTO in "$@"; do
         exit 2
 
     fi
+
+    SERIAL_TAG=${SERIAL_NUMBER%%: *}
+    SERIAL_NUMBER=${SERIAL_NUMBER#*: }
 
     if inArray "$SERIAL_NUMBER" "${CAMERA_SERIALS[@]}"; then
 
@@ -90,6 +94,7 @@ for SYNC_PHOTO in "$@"; do
     # convert Y-m-d H:M:S to timestamp
     CREATE_TIME=$(date -d "$CREATE_TIME" +'%s')
 
+    CAMERA_SERIAL_TAGS=("${CAMERA_SERIAL_TAGS[@]}" "$SERIAL_TAG")
     CAMERA_SERIALS=("${CAMERA_SERIALS[@]}" "$SERIAL_NUMBER")
     CAMERA_TIMES=("${CAMERA_TIMES[@]}" "$CREATE_TIME")
 
@@ -109,5 +114,34 @@ for SYNC_PHOTO in "$@"; do
 
 done
 
-echo -e "\nAll photos in $SYNC_DIR will be synchronised.\n"
+echo -e "\nAll photos in '$SYNC_DIR' will be synchronised.\n"
 
+# first, make sure we have a full set of XMP sidecars with original timestamps
+exiftool -overwrite_original --ext xmp -tagsFromFile @ -srcfile '%d%f.xmp' -AllDates "$SYNC_DIR" || exit 2
+
+TEMP_FILE="$(mktemp "/tmp/$(basename "$0").XXXXXXX")"
+
+CAMERA_COUNT="${#CAMERA_TIMES[@]}"
+
+# then, iterate through second and subsequent cameras to sync times with the first
+for (( i = 1; i < CAMERA_COUNT; i++ )); do
+
+    let j=i-1
+
+    SERIAL_TAG="${CAMERA_SERIAL_TAGS[$i]}"
+    SERIAL_NUMBER="${CAMERA_SERIALS[$i]}"
+
+    SECS="${TIME_SHIFTS[$j]}"
+    OPERAND="+="
+    [ "$SECS" -lt "0" ] && OPERAND="-="
+    SECS="${SECS#-}"
+    TIME_SHIFT="$(printf '0:0:%d %d:%d:%d' $(( $SECS / 86400 )) $(( $SECS % 86400 / 3600 )) $(( $SECS % 3600 / 60 )) $(( $SECS % 60 )))"
+
+    echo -e "\nShifting timestamps for camera '$SERIAL_NUMBER': ${OPERAND}${TIME_SHIFT}...\n"
+
+    exiftool --ext xmp -if '$'"$SERIAL_TAG"' eq "'"$SERIAL_NUMBER"'"' -p '$directory/$filename' "$SYNC_DIR" > "$TEMP_FILE" || exit 2
+    exiftool -@ "$TEMP_FILE" -overwrite_original -srcfile "%d%f.xmp" -AllDates"$OPERAND'$TIME_SHIFT'" || exit 2
+
+done
+
+echo -e "\nAll done!\n"
