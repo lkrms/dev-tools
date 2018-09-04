@@ -108,6 +108,57 @@ $(function () {
 
         }).replaceWith(whitespace);
 
+        // convert <span style="font-weight: bold;"> to <span style="font-weight: bold;"><strong>
+        // (<span> will be removed later)
+        p.find("*").filter(function () {
+
+            switch (this.style.fontWeight) {
+
+                case "bold":
+                case "bolder":
+                case "700":
+                case "800":
+                case "900":
+                    return true;
+
+            };
+
+            return false;
+
+        }).each(function () {
+
+            var strong = $("<strong></strong>");
+
+            strong.append($(this).contents());
+
+            $(this).append(strong);
+
+        });
+
+        // convert <span style="font-style: italic;"> to <span style="font-style: italic;"><em>
+        // (<span> will be removed later)
+        p.find("*").filter(function () {
+
+            switch (this.style.fontStyle) {
+
+                case "italic":
+                case "oblique":
+                    return true;
+
+            };
+
+            return false;
+
+        }).each(function () {
+
+            var em = $("<em></em>");
+
+            em.append($(this).contents());
+
+            $(this).append(em);
+
+        });
+
         // text-based transformations go here
         p.find("*").contents().filter(textNodeFilter).filter(function () {
 
