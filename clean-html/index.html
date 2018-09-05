@@ -121,9 +121,10 @@ $(function () {
                 case "900":
                     return true;
 
-            };
+                default:
+                    return false;
 
-            return false;
+            }
 
         }).each(function () {
 
@@ -145,9 +146,10 @@ $(function () {
                 case "oblique":
                     return true;
 
-            };
+                default:
+                    return false;
 
-            return false;
+            }
 
         }).each(function () {
 
@@ -160,6 +162,7 @@ $(function () {
         });
 
         // text-based transformations go here
+        // TODO: detect "• " and convert to <ul>
         p.find("*").contents().filter(textNodeFilter).filter(function () {
 
             return ! $(this).parents("a").length;

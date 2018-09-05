@@ -595,13 +595,14 @@ sudo mkdir -p /usr/local/lib/php/extensions && sudo chown ${USER}:$(id -g) /usr/
     applyPhpSetting "$INI" error_reporting E_ALL
     applyPhpSetting "$INI" display_errors On
     applyPhpSetting "$INI" display_startup_errors On
-    applyPhpSetting "$INI" xdebug.profiler_enable 1
+    applyPhpSetting "$INI" xdebug.profiler_enable 0
+    applyPhpSetting "$INI" xdebug.profiler_enable_trigger 1
     applyPhpSetting "$INI" xdebug.remote_enable 1
-    applyPhpSetting "$INI" xdebug.remote_connect_back 1
+    applyPhpSetting "$INI" xdebug.remote_connect_back 0
 
     [ -d /usr/local/lib/php/extensions ] && find /usr/local/lib/php/extensions -name '*.so' -type f | while read EXTENSION; do
 
-        if [ "$(basename "$EXTENSION")" != "xdebug.so" ]; then
+        if [ "$(basename "$EXTENSION")" != "xdebug.so" -a "$(basename "$EXTENSION")" != "opcache.so" ]; then
 
             enablePhpExtension "$INI" extension "$EXTENSION"
 
