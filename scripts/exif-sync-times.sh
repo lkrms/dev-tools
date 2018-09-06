@@ -2,9 +2,6 @@
 
 SCRIPT_DIR="$(cd "$(dirname "$0")"; pwd)"
 
-# set to 1 if ALL metadata should be copied to the XMP sidecar
-COPY_EXIF_FROM_SOURCE=0
-
 # if your camera uses a different tag for its unique identifier, add it here (order reflects priority)
 SERIAL_NUMBER_TAGS="-SerialNumber -InternalSerialNumber"
 
@@ -22,7 +19,7 @@ fi
 
 if [ "$#" -lt "2" ]; then
 
-    echo "Usage: $(basename "$0") </path/to/sync_photo_1.ext> </path/to/sync_photo_2.ext> [...]"
+    echo "Usage: $(basename "$0") PHOTO1 PHOTO2 [PHOTO3...]"
     exit 1
 
 fi
