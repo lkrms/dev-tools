@@ -33,58 +33,43 @@ fi
 
 command -v exiftool >/dev/null 2>&1 || { echo "Error: exiftool not found"; exit 1; }
 
-while read -d $'\0' PHOTO_FILE; do
+TEMP_FILE="$(mktemp "/tmp/$(basename "$0").XXXXXXX")"
 
-    XMP_FILE="${PHOTO_FILE%.*}.xmp"
+# first, make sure we have a full set of XMP sidecars (FileName is quick to copy and handy in the next step, and Creator will be overwritten shortly)
+exiftool -overwrite_original --ext xmp -tagsFromFile @ -srcfile '%d%f.xmp' '-Creator<FileName' -r "$PHOTOS_ROOT" || exit 2
 
-    if [ -e "$XMP_FILE" -a "$SKIP_EXISTING" -ne "0" ]; then
+# next, identify XMP sidecars with no CreateDate
+exiftool --ext xmp -srcfile '%d%f.xmp' -if 'not $CreateDate' -p '$Directory/$Creator' -r "$PHOTOS_ROOT" > "$TEMP_FILE"
 
-        echo "Skipping (XMP file already exists): $PHOTO_FILE"
+# (exit code is 2 if no files match, so we have to be more specific with our error checking)
+if [ "$?" -eq "1" ]; then
 
-        continue
+    exit 2
 
-    fi
+fi
 
-    TAG_TO_COPY="-CreateDate"
+# populate them with CreateDate
+if [ "$(cat "$TEMP_FILE" | wc -l)" -gt "0" ]; then
 
-    if [ "$COPY_EXIF_FROM_SOURCE" -ne "0" ]; then
+    exiftool -@ "$TEMP_FILE" -overwrite_original -tagsFromFile @ -srcfile "%d%f.xmp" -CreateDate || exit 2
 
-        TAG_TO_COPY=
+fi
 
-    fi
+# finally, apply copyright metadata to all sidecars
+exiftool -overwrite_original --ext xmp -srcfile "%d%f.xmp" -d %Y \
+    -Marked=true \
+    '-Copyright<'"$EXIF_COPYRIGHT" \
+    "-UsageTerms=$EXIF_USAGE_TERMS" \
+    "-WebStatement=$EXIF_COPYRIGHT_INFO_URL" \
+    "-Creator=$EXIF_CREATOR" \
+    "-CreatorAddress=$EXIF_CREATOR_ADDRESS" \
+    "-CreatorCity=$EXIF_CREATOR_CITY" \
+    "-CreatorCountry=$EXIF_CREATOR_COUNTRY" \
+    "-CreatorWorkEmail=$EXIF_CREATOR_EMAIL" \
+    "-CreatorWorkTelephone=$EXIF_CREATOR_PHONE" \
+    "-CreatorPostalCode=$EXIF_CREATOR_POSTAL_CODE" \
+    "-CreatorRegion=$EXIF_CREATOR_REGION" \
+    "-CreatorWorkURL=$EXIF_CREATOR_URL" \
+    -r "$PHOTOS_ROOT" || exit 2
 
-    # keep our subprocesses in check
-    while [ "$(jobs -p | wc -l)" -gt "$MAX_PROCESSES" ]; do
-
-        sleep 1;
-
-    done
-
-    (
-        # populate sidecar with metadata from file
-        exiftool -overwrite_original -tagsFromFile "$PHOTO_FILE" $TAG_TO_COPY "$XMP_FILE"
-
-        # apply copyright metadata to sidecar
-        exiftool -overwrite_original -d %Y \
-            -Marked=true \
-            '-Copyright<'"$EXIF_COPYRIGHT" \
-            "-UsageTerms=$EXIF_USAGE_TERMS" \
-            "-WebStatement=$EXIF_COPYRIGHT_INFO_URL" \
-            "-Creator=$EXIF_CREATOR" \
-            "-CreatorAddress=$EXIF_CREATOR_ADDRESS" \
-            "-CreatorCity=$EXIF_CREATOR_CITY" \
-            "-CreatorCountry=$EXIF_CREATOR_COUNTRY" \
-            "-CreatorWorkEmail=$EXIF_CREATOR_EMAIL" \
-            "-CreatorWorkTelephone=$EXIF_CREATOR_PHONE" \
-            "-CreatorPostalCode=$EXIF_CREATOR_POSTAL_CODE" \
-            "-CreatorRegion=$EXIF_CREATOR_REGION" \
-            "-CreatorWorkURL=$EXIF_CREATOR_URL" \
-            "$XMP_FILE"
-
-    ) >/dev/null &
-
-    echo "Processing ${PHOTO_FILE}..."
-
-done < <(find "$PHOTOS_ROOT" -type f \( -iname '*.nef' \) -print0 | sort -z)
-
-wait
+echo -e "\nAll done!\n"
