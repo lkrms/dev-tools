@@ -37,7 +37,7 @@ function doRename () {
     local SEQ=0 TIMESTAMP XMP_PATH RENAME_PATH RENAME_TO RENAME RENAME_EXT RENAME_PATH
 
     # gather CreateDates into a sortable list
-    exiftool --ext xmp -srcfile '%d%f.xmp' -d %s -p '$CreateDate $Directory/$FileName' "$PHOTOS_DIR" | sort -n > "$TEMP_FILE" || exit 2
+    exiftool --ext xmp -srcfile '%d%f.xmp' -srcfile @ -d %s -p '$CreateDate $Directory/$FileName' "$PHOTOS_DIR" | sort -n > "$TEMP_FILE" || exit 2
 
     while read TIMESTAMP XMP_PATH; do
 
@@ -66,6 +66,8 @@ function doRename () {
 
         done
 
+        let RENAME_COUNT+=1
+
     done < "$TEMP_FILE"
 
 }
@@ -80,4 +82,4 @@ RENAME_COUNT=0
 # pass 2: rename without a suffix
 doRename ''
 
-echo -e "\nAll done!\n"
+echo -e "\nAll done! $RENAME_COUNT files renamed.\n"
