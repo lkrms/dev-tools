@@ -23,11 +23,16 @@ if [ "$DISTRIB_CODENAME" != "xenial" -a "$DISTRIB_CODENAME" != "bionic" ]; then
 
 fi
 
+CLI_ONLY=0
+
+# i.e. no GUI software, drivers, virtualisation etc.
+grep -q Microsoft /proc/version && CLI_ONLY=1
+
 echo -e "Upgrading everything that's currently installed...\n"
 
 sudo apt-get update || exit 1
 sudo apt-get -y dist-upgrade || exit 1
-sudo snap refresh || exit 1
+[ "$CLI_ONLY" -eq "0" ] && { sudo snap refresh || exit 1; }
 
 # disabled due to issues with nvidia drivers
 #
@@ -45,29 +50,97 @@ echo -e "Adding all required apt repositories...\n"
 
 OLD_SOURCES="$(cat /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null)"
 
-cat /etc/apt/sources.list.d/*.list 2>/dev/null | grep -q 'alexlarsson/flatpak' || sudo add-apt-repository -y ppa:alexlarsson/flatpak || exit 1
-cat /etc/apt/sources.list.d/*.list | grep -q 'eosrei/fonts' || sudo add-apt-repository -y ppa:eosrei/fonts || exit 1
-cat /etc/apt/sources.list.d/*.list | grep -q 'stebbins/handbrake-releases' || sudo add-apt-repository -y ppa:stebbins/handbrake-releases || exit 1
+#cat /etc/apt/sources.list.d/*.list | grep -q 'alexlarsson/flatpak' || sudo add-apt-repository -y ppa:alexlarsson/flatpak || exit 1
 
-# touchpad-indicator
-cat /etc/apt/sources.list.d/*.list | grep -q 'atareao/atareao' || sudo add-apt-repository -y ppa:atareao/atareao || exit 1
+if [ "$CLI_ONLY" -eq "0" ]; then
 
-# Ghostwriter
-cat /etc/apt/sources.list.d/*.list | grep -q 'wereturtle/ppa' || sudo add-apt-repository -y ppa:wereturtle/ppa || exit 1
+    cat /etc/apt/sources.list.d/*.list | grep -q 'eosrei/fonts' || sudo add-apt-repository -y ppa:eosrei/fonts || exit 1
+    cat /etc/apt/sources.list.d/*.list | grep -q 'stebbins/handbrake-releases' || sudo add-apt-repository -y ppa:stebbins/handbrake-releases || exit 1
 
-if [ "$DISTRIB_CODENAME" == "xenial" ]; then
+    # touchpad-indicator
+    cat /etc/apt/sources.list.d/*.list | grep -q 'atareao/atareao' || sudo add-apt-repository -y ppa:atareao/atareao || exit 1
 
-    # bionic provides up-to-date versions of these out-of-the-box
-    cat /etc/apt/sources.list.d/*.list | grep -q 'caffeine-developers/ppa' || sudo add-apt-repository -y ppa:caffeine-developers/ppa || exit 1
-    cat /etc/apt/sources.list.d/*.list | grep -q 'inkscape.dev/stable' || sudo add-apt-repository -y ppa:inkscape.dev/stable || exit 1
-    cat /etc/apt/sources.list.d/*.list | grep -q 'linrunner/tlp' || sudo add-apt-repository -y ppa:linrunner/tlp || exit 1
-    cat /etc/apt/sources.list.d/*.list | grep -q 'phoerious/keepassxc' || sudo add-apt-repository -y ppa:phoerious/keepassxc || exit 1
-    cat /etc/apt/sources.list.d/*.list | grep -q 'scribus/ppa' || sudo add-apt-repository -y ppa:scribus/ppa || exit 1
+    # Ghostwriter
+    cat /etc/apt/sources.list.d/*.list | grep -q 'wereturtle/ppa' || sudo add-apt-repository -y ppa:wereturtle/ppa || exit 1
 
-else
+    if [ "$DISTRIB_CODENAME" == "xenial" ]; then
 
-    # CopyQ's PPA version depends on Qt 5, so we install an old version on xenial
-    cat /etc/apt/sources.list.d/*.list | grep -q 'hluk/copyq' || sudo add-apt-repository -y ppa:hluk/copyq || exit 1
+        # bionic provides up-to-date versions of these out-of-the-box
+        cat /etc/apt/sources.list.d/*.list | grep -q 'caffeine-developers/ppa' || sudo add-apt-repository -y ppa:caffeine-developers/ppa || exit 1
+        cat /etc/apt/sources.list.d/*.list | grep -q 'inkscape.dev/stable' || sudo add-apt-repository -y ppa:inkscape.dev/stable || exit 1
+        cat /etc/apt/sources.list.d/*.list | grep -q 'linrunner/tlp' || sudo add-apt-repository -y ppa:linrunner/tlp || exit 1
+        cat /etc/apt/sources.list.d/*.list | grep -q 'phoerious/keepassxc' || sudo add-apt-repository -y ppa:phoerious/keepassxc || exit 1
+        cat /etc/apt/sources.list.d/*.list | grep -q 'scribus/ppa' || sudo add-apt-repository -y ppa:scribus/ppa || exit 1
+
+    else
+
+        # CopyQ's PPA version depends on Qt 5, so we install an old version on xenial
+        cat /etc/apt/sources.list.d/*.list | grep -q 'hluk/copyq' || sudo add-apt-repository -y ppa:hluk/copyq || exit 1
+
+    fi
+
+    if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
+
+        wget -O - https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - || exit 1
+        echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $DISTRIB_CODENAME stable" | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null || exit 1
+
+    fi
+
+    if [ ! -f /etc/apt/sources.list.d/google-chrome.list ]; then
+
+        wget -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add - || exit 1
+        echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list >/dev/null || exit 1
+
+    fi
+
+    if [ ! -f /etc/apt/sources.list.d/owncloud-client.list ]; then
+
+        wget -O - https://download.opensuse.org/repositories/isv:ownCloud:desktop/Ubuntu_$DISTRIB_RELEASE/Release.key | sudo apt-key add - || exit 1
+        echo "deb http://download.opensuse.org/repositories/isv:/ownCloud:/desktop/Ubuntu_$DISTRIB_RELEASE/ /" | sudo tee /etc/apt/sources.list.d/owncloud-client.list >/dev/null || exit 1
+
+    fi
+
+    if [ ! -f /etc/apt/sources.list.d/sublime-text.list ]; then
+
+        wget -O - https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add - || exit 1
+        echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list >/dev/null || exit 1
+
+    fi
+
+    if [ ! -f /etc/apt/sources.list.d/virtualbox.list ]; then
+
+        wget -O - https://www.virtualbox.org/download/oracle_vbox_2016.asc | sudo apt-key add - || exit 1
+        echo "deb [arch=amd64] http://download.virtualbox.org/virtualbox/debian $DISTRIB_CODENAME contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list >/dev/null || exit 1
+
+    fi
+
+    if [ ! -f /etc/apt/sources.list.d/spotify.list ]; then
+
+        sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 0DF731E45CE24F27EEEB1450EFDC8610341D9410 || exit 1
+        echo "deb http://repository.spotify.com stable non-free" | sudo tee /etc/apt/sources.list.d/spotify.list >/dev/null || exit 1
+
+    fi
+
+    if [ ! -f /etc/apt/sources.list.d/mkvtoolnix.list ]; then
+
+        wget -O - https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt | sudo apt-key add - || exit 1
+        echo "deb https://mkvtoolnix.download/ubuntu/ $DISTRIB_CODENAME main" | sudo tee /etc/apt/sources.list.d/mkvtoolnix.list >/dev/null || exit 1
+
+    fi
+
+    if [ ! -f /etc/apt/sources.list.d/typora.list ]; then
+
+        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BA300B7755AFCFAE || exit 1
+        echo "deb https://typora.io ./linux/" | sudo tee /etc/apt/sources.list.d/typora.list >/dev/null || exit 1
+
+    fi
+
+    if [ ! -f /etc/apt/sources.list.d/microsoft.list ]; then
+
+        wget -O - https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add - || exit 1
+        echo "deb [arch=amd64] https://packages.microsoft.com/ubuntu/$DISTRIB_RELEASE/prod $DISTRIB_CODENAME main" | sudo tee /etc/apt/sources.list.d/microsoft.list >/dev/null || exit 1
+
+    fi
 
 fi
 
@@ -86,62 +159,6 @@ EOF
 
 fi
 
-if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
-
-    wget -O - https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - || exit 1
-    echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $DISTRIB_CODENAME stable" | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null || exit 1
-
-fi
-
-if [ ! -f /etc/apt/sources.list.d/google-chrome.list ]; then
-
-    wget -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add - || exit 1
-    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list >/dev/null || exit 1
-
-fi
-
-if [ ! -f /etc/apt/sources.list.d/owncloud-client.list ]; then
-
-    wget -O - https://download.opensuse.org/repositories/isv:ownCloud:desktop/Ubuntu_$DISTRIB_RELEASE/Release.key | sudo apt-key add - || exit 1
-    echo "deb http://download.opensuse.org/repositories/isv:/ownCloud:/desktop/Ubuntu_$DISTRIB_RELEASE/ /" | sudo tee /etc/apt/sources.list.d/owncloud-client.list >/dev/null || exit 1
-
-fi
-
-if [ ! -f /etc/apt/sources.list.d/sublime-text.list ]; then
-
-    wget -O - https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add - || exit 1
-    echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list >/dev/null || exit 1
-
-fi
-
-if [ ! -f /etc/apt/sources.list.d/virtualbox.list ]; then
-
-    wget -O - https://www.virtualbox.org/download/oracle_vbox_2016.asc | sudo apt-key add - || exit 1
-    echo "deb [arch=amd64] http://download.virtualbox.org/virtualbox/debian $DISTRIB_CODENAME contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list >/dev/null || exit 1
-
-fi
-
-if [ ! -f /etc/apt/sources.list.d/spotify.list ]; then
-
-    sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 0DF731E45CE24F27EEEB1450EFDC8610341D9410 || exit 1
-    echo "deb http://repository.spotify.com stable non-free" | sudo tee /etc/apt/sources.list.d/spotify.list >/dev/null || exit 1
-
-fi
-
-if [ ! -f /etc/apt/sources.list.d/mkvtoolnix.list ]; then
-
-    wget -O - https://mkvtoolnix.download/gpg-pub-moritzbunkus.txt | sudo apt-key add - || exit 1
-    echo "deb https://mkvtoolnix.download/ubuntu/ $DISTRIB_CODENAME main" | sudo tee /etc/apt/sources.list.d/mkvtoolnix.list >/dev/null || exit 1
-
-fi
-
-if [ ! -f /etc/apt/sources.list.d/typora.list ]; then
-
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BA300B7755AFCFAE || exit 1
-    echo "deb https://typora.io ./linux/" | sudo tee /etc/apt/sources.list.d/typora.list >/dev/null || exit 1
-
-fi
-
 if [ ! -f /etc/apt/sources.list.d/nodesource.list ]; then
 
     wget -O - https://deb.nodesource.com/gpgkey/nodesource.gpg.key | sudo apt-key add - || exit 1
@@ -154,13 +171,6 @@ if [ ! -f /etc/apt/sources.list.d/yarn.list ]; then
 
     wget -O - https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add - || exit 1
     echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list >/dev/null || exit 1
-
-fi
-
-if [ ! -f /etc/apt/sources.list.d/microsoft.list ]; then
-
-    wget -O - https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add - || exit 1
-    echo "deb [arch=amd64] https://packages.microsoft.com/ubuntu/$DISTRIB_RELEASE/prod $DISTRIB_CODENAME main" | sudo tee /etc/apt/sources.list.d/microsoft.list >/dev/null || exit 1
 
 fi
 
@@ -226,12 +236,12 @@ APT_GET_PENDING=()
 APT_REMOVE_PENDING=()
 
 # virtualisation
-apt_get \
+[ "$CLI_ONLY" -eq "0" ] && apt_get \
     docker-ce \
     virtualbox-5.2 \
 
 # power management; see http://linrunner.de/en/tlp/docs/tlp-linux-advanced-power-management.html
-apt_get \
+[ "$CLI_ONLY" -eq "0" ] && apt_get \
     acpi-call-dkms \
     dkms \
     tlp \
@@ -259,11 +269,13 @@ apt_get \
 
 # package / dependency managers
 apt_get \
-    flatpak \
     yarn \
 
+#apt_get \
+#    flatpak \
+
 # Pandoc
-apt_get \
+[ "$CLI_ONLY" -eq "0" ] && apt_get \
     pandoc \
     texlive-fonts-recommended \
     texlive-latex-recommended \
@@ -276,7 +288,7 @@ apt_remove \
     pdftk \
 
 # indicator-based apps
-apt_get \
+[ "$CLI_ONLY" -eq "0" ] && apt_get \
     autokey-gtk \
     blueman \
     shutter \
@@ -284,13 +296,13 @@ apt_get \
 
 if [ "$DISTRIB_CODENAME" != "xenial" ]; then
 
-    apt_get \
+    [ "$CLI_ONLY" -eq "0" ] && apt_get \
         copyq \
 
 fi
 
 # utility apps
-apt_get \
+[ "$CLI_ONLY" -eq "0" ] && apt_get \
     dconf-editor \
     gconf-editor \
     remmina \
@@ -300,7 +312,7 @@ apt_get \
     x11vnc \
 
 # desktop essentials
-apt_get \
+[ "$CLI_ONLY" -eq "0" ] && apt_get \
     filezilla \
     firefox \
     fonts-symbola \
@@ -327,10 +339,12 @@ apt_get \
     vlc \
 
 # photography
-apt_get \
+[ "$CLI_ONLY" -eq "0" ] && apt_get \
     geeqie \
-    libmediainfo0v5 \
     rapid-photo-downloader \
+
+apt_get \
+    libmediainfo0v5 \
 
 # development
 apt_get \
@@ -367,12 +381,12 @@ if [ "$DISTRIB_CODENAME" == "xenial" ]; then
     apt_get \
         php-mcrypt \
 
-    apt_get \
+    [ "$CLI_ONLY" -eq "0" ] && apt_get \
         powershell \
 
 else
 
-    apt_get \
+    [ "$CLI_ONLY" -eq "0" ] && apt_get \
         powershell-preview \
 
 fi
@@ -384,14 +398,14 @@ apt_get \
     mariadb-server \
 
 # desktop apps for development
-apt_get \
+[ "$CLI_ONLY" -eq "0" ] && apt_get \
     git-cola \
     meld \
     mysql-workbench \
     sublime-text \
 
 # needed for MakeMKV (see: http://www.makemkv.com/forum2/viewtopic.php?f=3&t=224)
-apt_get \
+[ "$CLI_ONLY" -eq "0" ] && apt_get \
     pkg-config \
     libc6-dev \
     libssl-dev \
@@ -402,69 +416,73 @@ apt_get \
     zlib1g-dev \
 
 # needed for Db2 installation
-apt_get \
+[ "$CLI_ONLY" -eq "0" ] && apt_get \
     libpam0g:i386 \
 
 # needed for Cisco AnyConnect client
-apt_get \
+[ "$CLI_ONLY" -eq "0" ] && apt_get \
     lib32ncurses5 \
     lib32z1 \
     libpangox-1.0-0 \
     network-manager-openconnect \
 
 apt_remove deja-dup
-apt_remove apport
+[ "$CLI_ONLY" -eq "0" ] && apt_remove apport
 
 do_apt_get
 
 echo -e "Applying post-install tweaks...\n"
 
-sudo adduser "$USER" vboxusers || exit 1
-sudo groupadd -f docker || exit 1
-sudo adduser "$USER" docker || exit 1
+#flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || exit 1
 
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || exit 1
+if [ "$CLI_ONLY" -eq "0" ]; then
 
-mkdir -p "$HOME/Downloads/install" || exit 1
+    sudo adduser "$USER" vboxusers || exit 1
+    sudo groupadd -f docker || exit 1
+    sudo adduser "$USER" docker || exit 1
 
-pushd "$HOME/Downloads/install" >/dev/null
+    mkdir -p "$HOME/Downloads/install" || exit 1
 
-# delete package files more than 24 hours old
-find . -maxdepth 1 -type f -name '*.deb' -mtime +1 -delete
+    pushd "$HOME/Downloads/install" >/dev/null
 
-wget -c --no-use-server-timestamps --content-disposition https://go.microsoft.com/fwlink/?LinkID=760868 || exit 1
-wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-5.1.30_qt5.amd64.deb || exit 1
-wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
-wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
-wget -c --no-use-server-timestamps https://github.com/saenzramiro/rambox/releases/download/0.5.17/Rambox_0.5.17-x64.deb || exit 1
-wget -c --no-use-server-timestamps https://go.skype.com/skypeforlinux-64.deb || exit 1
-wget -c --no-use-server-timestamps https://release.gitkraken.com/linux/gitkraken-amd64.deb || exit 1
+    # delete package files more than 24 hours old
+    find . -maxdepth 1 -type f -name '*.deb' -mtime +1 -delete
 
-if [ "$DISTRIB_CODENAME" == "xenial" ]; then
+    wget -c --no-use-server-timestamps --content-disposition https://go.microsoft.com/fwlink/?LinkID=760868 || exit 1
+    wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-5.1.30_qt5.amd64.deb || exit 1
+    wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
+    wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
+    wget -c --no-use-server-timestamps https://github.com/saenzramiro/rambox/releases/download/0.5.17/Rambox_0.5.17-x64.deb || exit 1
+    wget -c --no-use-server-timestamps https://go.skype.com/skypeforlinux-64.deb || exit 1
+    wget -c --no-use-server-timestamps https://release.gitkraken.com/linux/gitkraken-amd64.deb || exit 1
 
-    wget -c --no-use-server-timestamps https://downloads.slack-edge.com/linux_releases/slack-desktop-3.2.1-amd64.deb || exit 1
-    wget -c --no-use-server-timestamps https://github.com/hluk/CopyQ/releases/download/v3.1.1/copyq_3.1.1_Ubuntu_16.04-1_amd64.deb || exit 1
+    if [ "$DISTRIB_CODENAME" == "xenial" ]; then
 
-fi
+        wget -c --no-use-server-timestamps https://downloads.slack-edge.com/linux_releases/slack-desktop-3.2.1-amd64.deb || exit 1
+        wget -c --no-use-server-timestamps https://github.com/hluk/CopyQ/releases/download/v3.1.1/copyq_3.1.1_Ubuntu_16.04-1_amd64.deb || exit 1
 
-sudo dpkg -EGi *.deb || sudo aptitude -yf install || exit 1
+    fi
 
-popd >/dev/null
+    sudo dpkg -EGi *.deb || sudo aptitude -yf install || exit 1
 
-echo -e "Installing snaps...\n"
+    popd >/dev/null
 
-if [ "$DISTRIB_CODENAME" != "xenial" ]; then
+    echo -e "Installing snaps...\n"
 
-    sudo snap install slack --classic || exit 1
-    sudo snap install caprine --classic || exit 1
+    if [ "$DISTRIB_CODENAME" != "xenial" ]; then
+
+        sudo snap install slack --classic || exit 1
+        sudo snap install caprine --classic || exit 1
+
+    fi
 
 fi
 
 echo -e "Installing npm packages...\n"
-sudo npm install -g jslint || exit 1
+[ "$CLI_ONLY" -eq "0" ] && { sudo npm install -g jslint || exit 1; }
 
 # Sublime Text expects "jsl" to be on the path, so make it so
-command -v jsl >/dev/null 2>&1 || sudo ln -s /usr/bin/jslint /usr/local/bin/jsl
+[ "$CLI_ONLY" -eq "0" ] && { command -v jsl >/dev/null 2>&1 || sudo ln -s /usr/bin/jslint /usr/local/bin/jsl; }
 
 echo -e "Updating all npm packages...\n"
 sudo npm update -g || exit 1
@@ -472,51 +490,55 @@ sudo npm update -g || exit 1
 #echo -e "Installing flatpack packages...\n"
 #flatpak install -y flathub org.baedert.corebird || exit 1
 
-echo -e "Updating all flatpak packages...\n"
-flatpak update || exit 1
+#echo -e "Updating all flatpak packages...\n"
+#flatpak update || exit 1
 
-echo -e "Configuring TLP (power management)...\n"
+if [ "$CLI_ONLY" -eq "0" ]; then
 
-function applyTlpSetting {
+    echo -e "Configuring TLP (power management)...\n"
 
-    INIFILE=$1
-    SETTINGNAME=$2
-    SETTINGVALUE=$3
+    function applyTlpSetting {
 
-    if grep -qE "^${SETTINGNAME}=" "$INIFILE"; then
+        INIFILE=$1
+        SETTINGNAME=$2
+        SETTINGVALUE=$3
 
-        # we have a defined setting to replace
-        sudo sed -ri "s;^${SETTINGNAME}=.*\$;${SETTINGNAME}=${SETTINGVALUE};" "$INIFILE"
+        if grep -qE "^${SETTINGNAME}=" "$INIFILE"; then
 
-    elif grep -qE "^#${SETTINGNAME}=" "$INIFILE"; then
+            # we have a defined setting to replace
+            sudo sed -ri "s;^${SETTINGNAME}=.*\$;${SETTINGNAME}=${SETTINGVALUE};" "$INIFILE"
 
-        # we have a commented-out setting to replace
-        sudo sed -ri "s;^#${SETTINGNAME}=.*\$;${SETTINGNAME}=${SETTINGVALUE};" "$INIFILE"
+        elif grep -qE "^#${SETTINGNAME}=" "$INIFILE"; then
 
-    else
+            # we have a commented-out setting to replace
+            sudo sed -ri "s;^#${SETTINGNAME}=.*\$;${SETTINGNAME}=${SETTINGVALUE};" "$INIFILE"
 
-        echo "${SETTINGNAME}=${SETTINGVALUE}" | sudo tee -a "$INIFILE" >/dev/null
+        else
+
+            echo "${SETTINGNAME}=${SETTINGVALUE}" | sudo tee -a "$INIFILE" >/dev/null
+
+        fi
+
+    }
+
+    sudo update-rc.d -f ondemand remove || exit 1
+
+    INI="/etc/default/tlp"
+
+    if [ -f "$INI" ]; then
+
+        [ -f "${INI}.original" ] || sudo cp -p "$INI" "${INI}.original"
+
+        applyTlpSetting "$INI" CPU_SCALING_GOVERNOR_ON_AC performance
+        applyTlpSetting "$INI" CPU_SCALING_GOVERNOR_ON_BAT powersave
+        applyTlpSetting "$INI" CPU_HWP_ON_AC performance
+        applyTlpSetting "$INI" CPU_HWP_ON_BAT balance_power
+        applyTlpSetting "$INI" CPU_BOOST_ON_AC 1
+        applyTlpSetting "$INI" CPU_BOOST_ON_BAT 0
+        applyTlpSetting "$INI" USB_BLACKLIST_BTUSB 1
+        applyTlpSetting "$INI" USB_BLACKLIST_PHONE 1
 
     fi
-
-}
-
-sudo update-rc.d -f ondemand remove || exit 1
-
-INI="/etc/default/tlp"
-
-if [ -f "$INI" ]; then
-
-    [ -f "${INI}.original" ] || sudo cp -p "$INI" "${INI}.original"
-
-    applyTlpSetting "$INI" CPU_SCALING_GOVERNOR_ON_AC performance
-    applyTlpSetting "$INI" CPU_SCALING_GOVERNOR_ON_BAT powersave
-    applyTlpSetting "$INI" CPU_HWP_ON_AC performance
-    applyTlpSetting "$INI" CPU_HWP_ON_BAT balance_power
-    applyTlpSetting "$INI" CPU_BOOST_ON_AC 1
-    applyTlpSetting "$INI" CPU_BOOST_ON_BAT 0
-    applyTlpSetting "$INI" USB_BLACKLIST_BTUSB 1
-    applyTlpSetting "$INI" USB_BLACKLIST_PHONE 1
 
 fi
 
@@ -667,21 +689,23 @@ sudo a2enmod vhost_alias
 
 sudo service apache2 restart
 
-echo -e "Configuring VNC...\n"
+if [ "$CLI_ONLY" -eq "0" ]; then
 
-if [ ! -f "$HOME/.vnc/passwd" ]; then
+    echo -e "Configuring VNC...\n"
 
-    echo -e "\nNo password has been set for VNC. Please provide one.\n\n"
-    x11vnc -storepasswd
+    if [ ! -f "$HOME/.vnc/passwd" ]; then
 
-fi
+        echo -e "\nNo password has been set for VNC. Please provide one.\n\n"
+        x11vnc -storepasswd
 
-# x11vnc can't currently be configured to start before login on bionic; see http://c-nergy.be/blog/?p=8984
-if [ "$DISTRIB_CODENAME" == "xenial" -o "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
+    fi
 
-    if [ ! -f /lib/systemd/system/x11vnc.service ]; then
+    # x11vnc can't currently be configured to start before login on bionic; see http://c-nergy.be/blog/?p=8984
+    if [ "$DISTRIB_CODENAME" == "xenial" -o "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
 
-        sudo tee "/lib/systemd/system/x11vnc.service" >/dev/null <<EOF
+        if [ ! -f /lib/systemd/system/x11vnc.service ]; then
+
+            sudo tee "/lib/systemd/system/x11vnc.service" >/dev/null <<EOF
 [Unit]
 Description=Start x11vnc at startup.
 After=multi-user.target
@@ -694,61 +718,63 @@ ExecStart=/usr/bin/x11vnc -auth guess -forever -loop -noxdamage -repeat -rfbauth
 WantedBy=multi-user.target
 EOF
 
-        sudo systemctl daemon-reload
-        sudo systemctl enable x11vnc.service
-        sudo systemctl start x11vnc.service
+            sudo systemctl daemon-reload
+            sudo systemctl enable x11vnc.service
+            sudo systemctl start x11vnc.service
+
+        fi
 
     fi
 
+    # use Meld as our default merge / diff tool
+    if [ "$(git config --global merge.tool)" == "" ]; then
+
+        git config --global merge.tool meld
+        git config --global --bool mergetool.prompt false
+
+    fi
+
+    # GitKraken supports KDiff, but not Meld, so ...
+    command -v kdiff3 >/dev/null 2>&1 || sudo ln -s /usr/bin/meld /usr/local/bin/kdiff3
+
+    if [ "$XDG_CURRENT_DESKTOP" == "Unity" ]; then
+
+        gsettings set com.canonical.Unity.Launcher launcher-position Bottom
+
+        apt_get \
+            caffeine \
+            indicator-multiload \
+            unity-tweak-tool \
+
+    elif [ "$XDG_CURRENT_DESKTOP" == "ubuntu:GNOME" ]; then
+
+        gsettings set org.gnome.shell.extensions.dash-to-dock dock-position BOTTOM
+        gsettings set org.gnome.shell.extensions.dash-to-dock show-apps-at-top true
+
+        apt_get \
+            gnome-shell-extension-caffeine \
+            gnome-shell-extension-system-monitor \
+            gnome-tweak-tool \
+
+        apt_remove \
+            gnome-shell-extension-pixelsaver \
+
+    elif [ "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
+
+        apt_get \
+            autorandr \
+            disper \
+            docky \
+            indicator-multiload \
+
+    fi
+
+    do_apt_get
+
+    sudo systemctl stop cups-browsed
+    sudo systemctl disable cups-browsed
+
 fi
-
-sudo systemctl stop cups-browsed
-sudo systemctl disable cups-browsed
-
-# use Meld as our default merge / diff tool
-if [ "$(git config --global merge.tool)" == "" ]; then
-
-    git config --global merge.tool meld
-    git config --global --bool mergetool.prompt false
-
-fi
-
-# GitKraken supports KDiff, but not Meld, so ...
-command -v kdiff3 >/dev/null 2>&1 || sudo ln -s /usr/bin/meld /usr/local/bin/kdiff3
-
-if [ "$XDG_CURRENT_DESKTOP" == "Unity" ]; then
-
-    gsettings set com.canonical.Unity.Launcher launcher-position Bottom
-
-    apt_get \
-        caffeine \
-        indicator-multiload \
-        unity-tweak-tool \
-
-elif [ "$XDG_CURRENT_DESKTOP" == "ubuntu:GNOME" ]; then
-
-    gsettings set org.gnome.shell.extensions.dash-to-dock dock-position BOTTOM
-    gsettings set org.gnome.shell.extensions.dash-to-dock show-apps-at-top true
-
-    apt_get \
-        gnome-shell-extension-caffeine \
-        gnome-shell-extension-system-monitor \
-        gnome-tweak-tool \
-
-    apt_remove \
-        gnome-shell-extension-pixelsaver \
-
-elif [ "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
-
-    apt_get \
-        autorandr \
-        disper \
-        docky \
-        indicator-multiload \
-
-fi
-
-do_apt_get
 
 echo -e "\n\nDone. To complete the installation of libdvdcss, you may need to run: sudo dpkg-reconfigure libdvd-pkg"
 
