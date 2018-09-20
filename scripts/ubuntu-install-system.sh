@@ -116,7 +116,7 @@ if [ "$CLI_ONLY" -eq "0" ]; then
 
     if [ ! -f /etc/apt/sources.list.d/spotify.list ]; then
 
-        sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 0DF731E45CE24F27EEEB1450EFDC8610341D9410 || exit 1
+        sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 931FF8E79F0876134EDDBDCCA87FF9DF48BF1C90 || exit 1
         echo "deb http://repository.spotify.com stable non-free" | sudo tee /etc/apt/sources.list.d/spotify.list >/dev/null || exit 1
 
     fi
@@ -416,8 +416,8 @@ apt_get \
     zlib1g-dev \
 
 # needed for Db2 installation
-[ "$CLI_ONLY" -eq "0" ] && apt_get \
-    libpam0g:i386 \
+#[ "$CLI_ONLY" -eq "0" ] && apt_get \
+#    libpam0g:i386 \
 
 # needed for Cisco AnyConnect client
 [ "$CLI_ONLY" -eq "0" ] && apt_get \
@@ -471,8 +471,8 @@ if [ "$CLI_ONLY" -eq "0" ]; then
 
     if [ "$DISTRIB_CODENAME" != "xenial" ]; then
 
-        sudo snap install slack --classic || exit 1
-        sudo snap install caprine --classic || exit 1
+        sudo snap install slack --classic
+        sudo snap install caprine --classic
 
     fi
 
@@ -752,7 +752,7 @@ EOF
         gsettings set org.gnome.shell.extensions.dash-to-dock show-apps-at-top true
 
         apt_get \
-            gnome-shell-extension-caffeine \
+            caffeine \
             gnome-shell-extension-system-monitor \
             gnome-tweak-tool \
 
