@@ -308,6 +308,7 @@ fi
     remmina \
     seahorse \
     synergy \
+    terminator \
     usb-creator-gtk \
     x11vnc \
 
@@ -461,7 +462,15 @@ if [ "$CLI_ONLY" -eq "0" ]; then
         wget -c --no-use-server-timestamps https://downloads.slack-edge.com/linux_releases/slack-desktop-3.2.1-amd64.deb || exit 1
         wget -c --no-use-server-timestamps https://github.com/hluk/CopyQ/releases/download/v3.1.1/copyq_3.1.1_Ubuntu_16.04-1_amd64.deb || exit 1
 
+    else
+
+        # required by Shutter on Ubuntu > 17.10
+        wget -c --no-use-server-timestamps https://launchpad.net/ubuntu/+archive/primary/+files/libgoocanvas-common_1.0.0-1_all.deb || exit 1
+        wget -c --no-use-server-timestamps https://launchpad.net/ubuntu/+archive/primary/+files/libgoocanvas3_1.0.0-1_amd64.deb || exit 1
+        wget -c --no-use-server-timestamps https://launchpad.net/ubuntu/+archive/primary/+files/libgoo-canvas-perl_0.06-2ubuntu3_amd64.deb || exit 1
+
     fi
+
 
     sudo dpkg -EGi *.deb || sudo aptitude -yf install || exit 1
 
@@ -753,11 +762,14 @@ EOF
 
         apt_get \
             caffeine \
-            gnome-shell-extension-system-monitor \
             gnome-tweak-tool \
+            indicator-multiload \
 
         apt_remove \
             gnome-shell-extension-pixelsaver \
+            gnome-shell-extension-system-monitor \
+
+        sudo apt-get -y install libappindicator-dev && sudo PERL_MM_USE_DEFAULT=1 cpan -i Gtk2::AppIndicator
 
     elif [ "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
 
