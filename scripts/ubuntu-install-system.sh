@@ -471,7 +471,6 @@ if [ "$CLI_ONLY" -eq "0" ]; then
 
     fi
 
-
     sudo dpkg -EGi *.deb || sudo aptitude -yf install || exit 1
 
     popd >/dev/null
@@ -759,6 +758,8 @@ EOF
 
         gsettings set org.gnome.shell.extensions.dash-to-dock dock-position BOTTOM
         gsettings set org.gnome.shell.extensions.dash-to-dock show-apps-at-top true
+        gsettings set org.gnome.desktop.default-applications.terminal exec /usr/bin/terminator
+        gsettings set org.gnome.desktop.default-applications.terminal exec-arg '-x'
 
         apt_get \
             caffeine \
