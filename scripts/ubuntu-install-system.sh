@@ -308,7 +308,7 @@ fi
     remmina \
     seahorse \
     synergy \
-    terminator \
+    tilix \
     usb-creator-gtk \
     x11vnc \
 
@@ -758,8 +758,8 @@ EOF
 
         gsettings set org.gnome.shell.extensions.dash-to-dock dock-position BOTTOM
         gsettings set org.gnome.shell.extensions.dash-to-dock show-apps-at-top true
-        gsettings set org.gnome.desktop.default-applications.terminal exec /usr/bin/terminator
-        gsettings set org.gnome.desktop.default-applications.terminal exec-arg '-x'
+        gsettings set org.gnome.desktop.default-applications.terminal exec /usr/bin/tilix.wrapper
+        gsettings set org.gnome.desktop.default-applications.terminal exec-arg '-e'
 
         apt_get \
             caffeine \
