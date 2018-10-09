@@ -48,6 +48,14 @@ CAMERA_SERIALS=()
 CAMERA_TIMES=()
 TIME_SHIFTS=()
 
+DATE_COMMAND=date
+
+if [ "$(uname -s)" == "Darwin" ]; then
+
+    DATE_COMMAND=gdate
+
+fi
+
 for SYNC_PHOTO in "$@"; do
 
     if [ ! -f "$SYNC_PHOTO" ]; then
@@ -89,13 +97,13 @@ for SYNC_PHOTO in "$@"; do
     fi
 
     # convert Y-m-d H:M:S to timestamp
-    CREATE_TIME=$(date -d "$CREATE_TIME" +'%s')
+    CREATE_TIME=$("$DATE_COMMAND" -d "$CREATE_TIME" +'%s')
 
     CAMERA_SERIAL_TAGS=("${CAMERA_SERIAL_TAGS[@]}" "$SERIAL_TAG")
     CAMERA_SERIALS=("${CAMERA_SERIALS[@]}" "$SERIAL_NUMBER")
     CAMERA_TIMES=("${CAMERA_TIMES[@]}" "$CREATE_TIME")
 
-    echo -e "\nCamera with identifier '$SERIAL_NUMBER' has timestamp: $(date -d "@$CREATE_TIME")"
+    echo -e "\nCamera with identifier '$SERIAL_NUMBER' has timestamp: $("$DATE_COMMAND" -d "@$CREATE_TIME")"
 
     if [ "${#CAMERA_TIMES[@]}" -gt "1" ]; then
 

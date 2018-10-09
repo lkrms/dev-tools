@@ -30,6 +30,14 @@ fi
 
 command -v exiftool >/dev/null 2>&1 || { echo "Error: exiftool not found"; exit 1; }
 
+DATE_COMMAND=date
+
+if [ "$(uname -s)" == "Darwin" ]; then
+
+    DATE_COMMAND=gdate
+
+fi
+
 TEMP_FILE="$(mktemp "/tmp/$(basename "$0").XXXXXXX")"
 
 function doRename () {
@@ -44,7 +52,7 @@ function doRename () {
         let SEQ+=1
 
         RENAME_PATH="${XMP_PATH%.*}"
-        RENAME_TO="$(date -d "@$TIMESTAMP" +'%y%m%d')_$(printf "%04d" $SEQ)"
+        RENAME_TO="$("$DATE_COMMAND" -d "@$TIMESTAMP" +'%y%m%d')_$(printf "%04d" $SEQ)"
 
         # don't do any unnecessary renaming
         if [ "$(basename "$RENAME_PATH")" == "$RENAME_TO" ]; then
@@ -75,7 +83,7 @@ function doRename () {
 RENAME_COUNT=0
 
 # pass 1: rename with a unique suffix (so we don't overwrite anything)
-doRename "_$(date +'%s')"
+doRename "_$("$DATE_COMMAND" +'%s')"
 
 RENAME_COUNT=0
 
