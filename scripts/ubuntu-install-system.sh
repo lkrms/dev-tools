@@ -26,7 +26,7 @@ fi
 CLI_ONLY=0
 
 # i.e. no GUI software, drivers, virtualisation etc.
-grep -q Microsoft /proc/version && CLI_ONLY=1
+[ -e /proc/version ] && grep -q Microsoft /proc/version && CLI_ONLY=1
 
 echo -e "Upgrading everything that's currently installed...\n"
 
@@ -76,6 +76,13 @@ if [ "$CLI_ONLY" -eq "0" ]; then
 
         # CopyQ's PPA version depends on Qt 5, so we install an old version on xenial
         cat /etc/apt/sources.list.d/*.list | grep -q 'hluk/copyq' || sudo add-apt-repository -y ppa:hluk/copyq || exit 1
+
+    fi
+
+    # ensure we get the latest stable version of Docky
+    if [ "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
+
+        cat /etc/apt/sources.list.d/*.list | grep -q 'docky-core/stable' || sudo add-apt-repository -y ppa:docky-core/stable || exit 1
 
     fi
 
@@ -453,7 +460,7 @@ if [ "$CLI_ONLY" -eq "0" ]; then
     wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-5.1.30_qt5.amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
-    wget -c --no-use-server-timestamps https://github.com/saenzramiro/rambox/releases/download/0.5.17/Rambox_0.5.17-x64.deb || exit 1
+    wget -c --no-use-server-timestamps https://github.com/ramboxapp/community-edition/releases/download/0.6.1/Rambox-0.6.1-linux-amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://go.skype.com/skypeforlinux-64.deb || exit 1
     wget -c --no-use-server-timestamps https://release.gitkraken.com/linux/gitkraken-amd64.deb || exit 1
 
