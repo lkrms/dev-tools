@@ -79,13 +79,6 @@ if [ "$CLI_ONLY" -eq "0" ]; then
 
     fi
 
-    # ensure we get the latest stable version of Docky
-    if [ "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
-
-        cat /etc/apt/sources.list.d/*.list | grep -q 'docky-core/stable' || sudo add-apt-repository -y ppa:docky-core/stable || exit 1
-
-    fi
-
     if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
 
         wget -O - https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - || exit 1
