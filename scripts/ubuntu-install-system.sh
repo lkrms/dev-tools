@@ -253,6 +253,7 @@ apt_get \
     aptitude \
     attr \
     debconf-utils \
+    hfsprogs \
     hwinfo \
     iotop \
     net-tools \
@@ -261,6 +262,7 @@ apt_get \
     powertop \
     pv \
     s-nail \
+    screen \
     syslinux-utils \
     traceroute \
     trickle \
