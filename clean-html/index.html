@@ -258,7 +258,7 @@ $(function () {
 
                 $(this).replaceWith(whitespace);
 
-            } else if (this.innerHTML.match(/^[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,\-.\/:;<=>?@\[\]^_`{|}~ \f\n\r\t\v\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+$/)) {
+            } else if (this.innerText.match(/^[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,\-.\/:;<=>?@\[\]^_`{|}~ \f\n\r\t\v\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]*$/)) {
 
                 // replace inline elements that only contain punctuation and/or whitespace with their contents
                 $(this).replaceWith($(this).contents());
