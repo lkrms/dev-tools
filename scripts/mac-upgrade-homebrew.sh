@@ -13,6 +13,7 @@ echo -e "Attempting Homebrew update/upgrade/cleanup at $(date '+%c')...\n"
 
 brew update
 brew upgrade
+brew cask upgrade
 brew cleanup
 
 echo -e "\nOperation completed at: $(date '+%c')"

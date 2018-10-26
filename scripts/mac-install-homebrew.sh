@@ -10,6 +10,7 @@ fi
 command -v brew >/dev/null 2>&1 || /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" || exit 2
 
 brew upgrade
+brew cask upgrade
 
 brew install \
     coreutils \
@@ -32,10 +33,14 @@ if [[ $INSTALL_DEV_TOOLS =~ ^[Yy]$ ]]; then
         ant \
         autoconf \
         mariadb \
-        node \
         nvm \
         yarn \
         || exit 2
+
+    mkdir -p "$HOME/.nvm" || exit 2
+    export NVM_DIR="$HOME/.nvm"
+    . "$(brew --prefix nvm)/nvm.sh" || exit 2
+    nvm install 8 || exit 2
 
 fi
 
