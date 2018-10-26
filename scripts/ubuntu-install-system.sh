@@ -455,7 +455,7 @@ if [ "$CLI_ONLY" -eq "0" ]; then
     wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-5.1.30_qt5.amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
-    wget -c --no-use-server-timestamps https://github.com/ramboxapp/community-edition/releases/download/0.6.1/Rambox-0.6.1-linux-amd64.deb || exit 1
+    wget -c --no-use-server-timestamps https://github.com/ramboxapp/community-edition/releases/download/0.6.2/Rambox-0.6.2-linux-amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://go.skype.com/skypeforlinux-64.deb || exit 1
     wget -c --no-use-server-timestamps https://release.gitkraken.com/linux/gitkraken-amd64.deb || exit 1
 
