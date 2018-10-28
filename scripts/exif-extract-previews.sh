@@ -28,22 +28,43 @@ fi
 command -v exiftool >/dev/null 2>&1 || { echo "Error: exiftool not found"; exit 1; }
 command -v exiftran >/dev/null 2>&1 || { echo "Error: exiftran not found"; exit 1; }
 
-while read -d $'\0' PHOTO_FILE; do
+function extractPreview {
 
-    if [ -n "$2" ]; then
+    THIS_TARGET="$TARGET_FOLDER"
+    [ -z "$THIS_TARGET" ] && THIS_TARGET="$(basename "$(dirname "$(realpath "$1")")")"
+    THIS_TARGET="$EXPORTS_ROOT/$THIS_TARGET"
 
-        TARGET_FOLDER="$2"
+    mkdir -p "$THIS_TARGET" || exit 2
 
-    else
+    XMP_FILE="${1%.*}.xmp"
+    TARGET_FILE="$THIS_TARGET/$(basename "${1%.*}.jpg")"
 
-        TARGET_FOLDER="$(basename "$(dirname "$(realpath "$PHOTO_FILE")")")"
+    # extract the JPEG
+    exiftool -b $2 "$1" > "$TARGET_FILE"
 
-    fi
+    # copy [necessary] metadata
+    exiftool -overwrite_original -tagsFromFile "$1" -Orientation "$TARGET_FILE"
+    [ -e "$XMP_FILE" ] && exiftool -overwrite_original -tagsFromFile "$XMP_FILE" "$TARGET_FILE"
 
-    mkdir -p "$EXPORTS_ROOT/$TARGET_FOLDER" || exit 2
+    # rotate the JPEG if needed
+    exiftran -ai "$TARGET_FILE"
 
-    XMP_FILE="${PHOTO_FILE%.*}.xmp"
-    TARGET_FILE="$EXPORTS_ROOT/$TARGET_FOLDER/$(basename "${PHOTO_FILE%.*}.jpg")"
+    # downsample for online proofing etc.
+    convert "$TARGET_FILE" -scale "$EXPORT_GEOMETRY" -interpolate bicubic -quality $EXPORT_QUALITY "$TARGET_FILE"
+
+}
+
+TARGET_FOLDER=
+
+[ -n "$2" ] && TARGET_FOLDER="$2"
+
+TEMP_FILE="$(mktemp "/tmp/$(basename "$0").XXXXXXX")"
+
+# identify photos based on the preview tags they contain
+exiftool --ext xmp -if '$JpgFromRaw' -p '-JpgFromRaw $Directory/$Filename' -r "$PHOTOS_ROOT" > "$TEMP_FILE"
+exiftool --ext xmp -if 'not $JpgFromRaw' -if '$PreviewImage' -p '-PreviewImage $Directory/$Filename' -r "$PHOTOS_ROOT" >> "$TEMP_FILE"
+
+while read META_TAG PHOTO_FILE; do
 
     # keep our subprocesses in check
     while [ "$(jobs -p | wc -l)" -gt "$MAX_PROCESSES" ]; do
@@ -53,22 +74,12 @@ while read -d $'\0' PHOTO_FILE; do
     done
 
     (
-        # extract the JPEG
-        exiftool -b -JpgFromRaw "$PHOTO_FILE" > "$TARGET_FILE"
-
-        # copy [necessary] metadata
-        exiftool -overwrite_original -tagsFromFile "$PHOTO_FILE" -Orientation "$TARGET_FILE"
-        [ -e "$XMP_FILE" ] && exiftool -overwrite_original -tagsFromFile "$XMP_FILE" "$TARGET_FILE"
-
-        # rotate the JPEG if needed
-        exiftran -ai "$TARGET_FILE"
-
-        # downsample for online proofing etc.
-        convert "$TARGET_FILE" -scale "$EXPORT_GEOMETRY" -interpolate bicubic -quality $EXPORT_QUALITY "$TARGET_FILE"
+        extractPreview "$PHOTO_FILE" $META_TAG
     ) >/dev/null 2>&1 &
 
-    echo "Processing ${PHOTO_FILE} to ${TARGET_FILE}..."
+    echo "Processing ${PHOTO_FILE}..."
 
-done < <(find "$PHOTOS_ROOT" -type f \( -iname '*.nef' \) -print0 | sort -z)
+done < "$TEMP_FILE"
 
 wait
+
