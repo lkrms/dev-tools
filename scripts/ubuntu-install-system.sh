@@ -715,6 +715,17 @@ if [ "$CLI_ONLY" -eq "0" ]; then
 
         if [ ! -f /lib/systemd/system/x11vnc.service ]; then
 
+            if [ "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
+
+                # breaks VNC
+                apt_remove \
+                    light-locker \
+
+                apt_get \
+                    xscreensaver \
+
+            fi
+
             sudo tee "/lib/systemd/system/x11vnc.service" >/dev/null <<EOF
 [Unit]
 Description=Start x11vnc at startup.
