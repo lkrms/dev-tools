@@ -50,8 +50,6 @@ echo -e "Adding all required apt repositories...\n"
 
 OLD_SOURCES="$(cat /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null)"
 
-#cat /etc/apt/sources.list.d/*.list | grep -q 'alexlarsson/flatpak' || sudo add-apt-repository -y ppa:alexlarsson/flatpak || exit 1
-
 if [ "$CLI_ONLY" -eq "0" ]; then
 
     cat /etc/apt/sources.list.d/*.list | grep -q 'eosrei/fonts' || sudo add-apt-repository -y ppa:eosrei/fonts || exit 1
@@ -214,19 +212,19 @@ function apt_remove {
 
 function do_apt_get {
 
-    if [ "${#APT_GET_PENDING[@]}" -gt "0" ]; then
-
-        sudo apt-get -y install "${APT_GET_PENDING[@]}" || exit 1
-
-        APT_GET_PENDING=()
-
-    fi
-
     if [ "${#APT_REMOVE_PENDING[@]}" -gt "0" ]; then
 
         sudo apt-get -y purge "${APT_REMOVE_PENDING[@]}" || exit 1
 
         APT_REMOVE_PENDING=()
+
+    fi
+
+    if [ "${#APT_GET_PENDING[@]}" -gt "0" ]; then
+
+        sudo apt-get -y install "${APT_GET_PENDING[@]}" || exit 1
+
+        APT_GET_PENDING=()
 
     fi
 
@@ -272,9 +270,6 @@ apt_get \
 # package / dependency managers
 apt_get \
     yarn \
-
-#apt_get \
-#    flatpak \
 
 # Pandoc
 [ "$CLI_ONLY" -eq "0" ] && apt_get \
@@ -418,25 +413,13 @@ apt_get \
     libqt4-dev \
     zlib1g-dev \
 
-# needed for Db2 installation
-#[ "$CLI_ONLY" -eq "0" ] && apt_get \
-#    libpam0g:i386 \
-
-# needed for Cisco AnyConnect client
-[ "$CLI_ONLY" -eq "0" ] && apt_get \
-    lib32ncurses5 \
-    lib32z1 \
-    libpangox-1.0-0 \
-    network-manager-openconnect \
-
 apt_remove deja-dup
+
 [ "$CLI_ONLY" -eq "0" ] && apt_remove apport
 
 do_apt_get
 
 echo -e "Applying post-install tweaks...\n"
-
-#flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || exit 1
 
 if [ "$CLI_ONLY" -eq "0" ]; then
 
@@ -452,7 +435,7 @@ if [ "$CLI_ONLY" -eq "0" ]; then
     find . -maxdepth 1 -type f -name '*.deb' -mtime +1 -delete
 
     wget -c --no-use-server-timestamps --content-disposition https://go.microsoft.com/fwlink/?LinkID=760868 || exit 1
-    wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-5.1.30_qt5.amd64.deb || exit 1
+    wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-5.1.68_qt5.amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://github.com/ramboxapp/community-edition/releases/download/0.6.2/Rambox-0.6.2-linux-amd64.deb || exit 1
@@ -496,12 +479,6 @@ echo -e "Installing npm packages...\n"
 
 echo -e "Updating all npm packages...\n"
 sudo npm update -g || exit 1
-
-#echo -e "Installing flatpack packages...\n"
-#flatpak install -y flathub org.baedert.corebird || exit 1
-
-#echo -e "Updating all flatpak packages...\n"
-#flatpak update || exit 1
 
 if [ "$CLI_ONLY" -eq "0" ]; then
 
@@ -713,18 +690,15 @@ if [ "$CLI_ONLY" -eq "0" ]; then
     # x11vnc can't currently be configured to start before login on bionic; see http://c-nergy.be/blog/?p=8984
     if [ "$DISTRIB_CODENAME" == "xenial" -o "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
 
+        if [ "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
+
+            # reverses previous swap
+            apt_remove xscreensaver
+            apt_get light-locker
+
+        fi
+
         if [ ! -f /lib/systemd/system/x11vnc.service ]; then
-
-            if [ "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
-
-                # breaks VNC
-                apt_remove \
-                    light-locker \
-
-                apt_get \
-                    xscreensaver \
-
-            fi
 
             sudo tee "/lib/systemd/system/x11vnc.service" >/dev/null <<EOF
 [Unit]
@@ -733,7 +707,7 @@ After=multi-user.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/x11vnc -auth guess -forever -loop -noxdamage -repeat -rfbauth "$HOME/.vnc/passwd" -rfbport 5900 -shared
+ExecStart=/usr/bin/x11vnc -display :0 -auth guess -forever -loop -noxdamage -repeat -rfbauth "$HOME/.vnc/passwd" -rfbport 5900 -shared
 
 [Install]
 WantedBy=multi-user.target
@@ -742,6 +716,28 @@ EOF
             sudo systemctl daemon-reload
             sudo systemctl enable x11vnc.service
             sudo systemctl start x11vnc.service
+
+        fi
+
+        # create a second x11vnc service for the lock screen
+        if [ ! -f /lib/systemd/system/x11vnc-locker.service ]; then
+
+            sudo tee "/lib/systemd/system/x11vnc-locker.service" >/dev/null <<EOF
+[Unit]
+Description=Start x11vnc at startup.
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/x11vnc -display WAIT:1 -auth /run/lightdm/root/:1 -forever -loop -noxdamage -repeat -rfbauth "$HOME/.vnc/passwd" -rfbport 5901 -shared
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+            sudo systemctl daemon-reload
+            sudo systemctl enable x11vnc-locker.service
+            sudo systemctl start x11vnc-locker.service
 
         fi
 
