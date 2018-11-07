@@ -693,7 +693,7 @@ if [ "$CLI_ONLY" -eq "0" ]; then
         if [ "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
 
             # reverses previous swap
-            apt_remove xscreensaver
+            apt_remove xscreensaver xscreensaver-data
             apt_get light-locker
 
         fi
