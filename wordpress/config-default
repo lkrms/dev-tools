@@ -1,0 +1,4 @@
+MYSQL_COMMAND="sudo mysql -uroot"
+MYSQLDUMP_COMMAND="sudo mysqldump -uroot"
+SNAPSHOT_PATH="$HOME/wp-snapshots"
+

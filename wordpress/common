@@ -1,0 +1,48 @@
+function check_not_root {
+
+    if [ "$EUID" -eq "0" ]; then
+
+        echo "Error: this script can't be run as the root user"
+        exit 2
+
+    fi
+
+}
+
+function check_wp_cli {
+
+    local PREFIX=sudo
+
+    if ! command -v wp >/dev/null 2>&1; then
+
+        [ -d /usr/local/bin ] || { echo "Error: /usr/local/bin doesn't exist"; exit 2; }
+        [ ! -e /usr/local/bin/wp ] || { echo "Error: /usr/local/bin/wp already exists"; exit 2; }
+
+        [ -w /usr/local/bin ] && PREFIX=
+
+        $PREFIX curl -Lo /usr/local/bin/wp "https://raw.github.com/wp-cli/builds/gh-pages/phar/wp-cli.phar" || exit 2
+
+        $PREFIX chmod a+x /usr/local/bin/wp
+
+        return 1
+
+    fi
+
+    return 0
+
+}
+
+function update_wp_cli {
+
+    local PREFIX=sudo
+
+    [ -w /usr/local/bin -a -w /usr/local/bin/wp ] && PREFIX=
+
+    $PREFIX wp cli update --yes
+
+}
+
+. "$SCRIPT_DIR/config-default" || exit 2
+
+[ -e "$SCRIPT_DIR/config" ] && . "$SCRIPT_DIR/config"
+
