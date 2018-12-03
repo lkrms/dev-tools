@@ -15,6 +15,7 @@ brew cask upgrade
 brew install \
     coreutils \
     ghostscript \
+    lftp \
     micro \
     pandoc \
     pv \
@@ -32,6 +33,7 @@ if [[ $INSTALL_DEV_TOOLS =~ ^[Yy]$ ]]; then
     brew install \
         ant \
         autoconf \
+        gradle \
         mariadb \
         nvm \
         yarn \
