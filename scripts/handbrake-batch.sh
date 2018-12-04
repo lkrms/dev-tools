@@ -122,7 +122,7 @@ function process_file {
 
     fi
 
-    TEMP_TARGET_FILE="$(mktemp "/tmp/$SOURCE_NAME.$(date +'%s').$TARGET_EXTENSION")" || exit 2
+    TEMP_TARGET_FILE="$(mktemp "/tmp/$SOURCE_NAME.$(date +'%s').XXX.$TARGET_EXTENSION")" || exit 2
 
     log_something "Encoding: $1 to $TEMP_TARGET_FILE with preset: $HANDBRAKE_PRESET"
 
