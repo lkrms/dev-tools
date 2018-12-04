@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_DIR="$(cd "$(dirname "$0")"; pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")"; pwd -P)"
 LOG_DIR="$SCRIPT_DIR/log"
 LOG_FILE="$LOG_DIR/handbrake-batch.log"
 

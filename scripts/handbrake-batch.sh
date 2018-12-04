@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_DIR="$(cd "$(dirname "$0")"; pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")"; pwd -P)"
 
 SOURCE_PATH=
 TARGET_EXTENSION=m4v
@@ -122,13 +122,15 @@ function process_file {
 
     fi
 
-    log_something "Encoding: $1 to $TARGET_FILE with preset: $HANDBRAKE_PRESET"
+    TEMP_TARGET_FILE="$(mktemp "/tmp/$SOURCE_NAME.$(date +'%s').$TARGET_EXTENSION")" || exit 2
+
+    log_something "Encoding: $1 to $TEMP_TARGET_FILE with preset: $HANDBRAKE_PRESET"
 
     if [ "$DRY_RUN" -eq "0" ]; then
 
         mkdir -p "$(dirname "$TARGET_FILE")" || exit 2
 
-        HandBrakeCLI --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --output "$TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) </dev/null
+        HandBrakeCLI --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --output "$TEMP_TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) </dev/null
 
         HANDBRAKE_RESULT=$?
 
@@ -142,7 +144,26 @@ function process_file {
 
     if [ "$HANDBRAKE_RESULT" -eq "0" ]; then
 
-        [ "$DRY_RUN" -eq "0" ] && rm "$HANDBRAKE_LOG_FILE_STDOUT"
+        if [ "$DRY_RUN" -eq "0" ]; then
+
+            mv -n "$TEMP_TARGET_FILE" "$TARGET_FILE"
+
+            MOVE_RESULT=$?
+
+            [ "$MOVE_RESULT" -eq "0" ] && rm "$HANDBRAKE_LOG_FILE_STDOUT"
+
+        else
+
+            rm "$TEMP_TARGET_FILE"
+
+            MOVE_RESULT=0
+
+        fi
+
+        log_something "Moved $TEMP_TARGET_FILE to $TARGET_FILE (exit code $MOVE_RESULT)"
+
+        # no archiving if the temp file didn't move successfully
+        [ "$MOVE_RESULT" -eq "0" ] || return $MOVE_RESULT
 
         if [ -z "$2" ]; then
 
@@ -176,7 +197,7 @@ function process_file {
 
     else
 
-        [ "$DRY_RUN" -eq "0" -a -e "$TARGET_FILE" ] && mv "$TARGET_FILE" "$TARGET_FILE.delete"
+        [ "$DRY_RUN" -eq "0" -a -e "$TEMP_TARGET_FILE" ] && mv "$TEMP_TARGET_FILE" "$TEMP_TARGET_FILE.delete"
 
         return 2
 

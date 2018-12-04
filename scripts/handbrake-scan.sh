@@ -10,7 +10,7 @@ function log_something {
 
 }
 
-SCRIPT_DIR="$(cd "$(dirname "$0")"; pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")"; pwd -P)"
 LOG_DIR="$SCRIPT_DIR/log"
 LOG_FILE_BASE="$LOG_DIR/$(basename "$0")"
 LOG_FILE_BASE="${LOG_FILE_BASE/%.sh/}"
