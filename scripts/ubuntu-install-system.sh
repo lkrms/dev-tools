@@ -7,7 +7,10 @@ if [ "$(uname -s)" != "Linux" ]; then
 
 fi
 
-. /etc/lsb-release || exit 2
+DISTRIB_ID="$(lsb_release -si)" || exit 2
+DISTRIB_RELEASE="$(lsb_release -sr)" || exit 2
+DISTRIB_CODENAME="$(lsb_release -sc)" || exit 2
+DISTRIB_DESCRIPTION="$(lsb_release -sd)" || exit 2
 
 if [ "$DISTRIB_ID" != "Ubuntu" ]; then
 
@@ -18,7 +21,7 @@ fi
 
 if [ "$DISTRIB_CODENAME" != "xenial" -a "$DISTRIB_CODENAME" != "bionic" ]; then
 
-    echo "Error: $(basename "$0") is only supported on LTS releases of Ubuntu."
+    echo "Error: $(basename "$0") is only supported on LTS releases of Ubuntu (i.e. xenial or bionic)."
     exit 1
 
 fi
@@ -33,14 +36,6 @@ echo -e "Upgrading everything that's currently installed...\n"
 sudo apt-get update || exit 1
 sudo apt-get -y dist-upgrade || exit 1
 [ "$CLI_ONLY" -eq "0" ] && { sudo snap refresh || exit 1; }
-
-# disabled due to issues with nvidia drivers
-#
-#echo -e "Installing missing drivers...\n"
-#
-DRIVER_ERRORS=0
-#
-#sudo ubuntu-drivers autoinstall || DRIVER_ERRORS=1
 
 echo -e "Installing software-properties-common to get add-apt-repository...\n"
 
@@ -188,11 +183,22 @@ function apt_get {
 
         if ! dpkg -s $p >/dev/null 2>&1; then
 
-            APT_GET_PENDING+=($p)
+            if apt-cache madison $p 2>/dev/null | grep -q $p; then
+
+                APT_GET_PENDING+=($p)
+
+            else
+
+                echo "Skipping package (not available in repositories): $p"
+                return 1
+
+            fi
 
         fi
 
     done
+
+    return 0
 
 }
 
@@ -254,6 +260,7 @@ apt_get \
     hfsprogs \
     hwinfo \
     iotop \
+    lftp \
     net-tools \
     nethogs \
     openssh-server \
@@ -379,13 +386,19 @@ if [ "$DISTRIB_CODENAME" == "xenial" ]; then
     apt_get \
         php-mcrypt \
 
-    [ "$CLI_ONLY" -eq "0" ] && apt_get \
-        powershell \
+fi
 
-else
+if [ "$CLI_ONLY" -eq "0" ]; then
 
-    [ "$CLI_ONLY" -eq "0" ] && apt_get \
-        powershell-preview \
+    if apt_get powershell; then
+
+        apt_remove powershell-preview
+
+    else
+
+        apt_get powershell-preview
+
+    fi
 
 fi
 
@@ -399,8 +412,10 @@ apt_get \
 [ "$CLI_ONLY" -eq "0" ] && apt_get \
     git-cola \
     meld \
-    mysql-workbench \
     sublime-text \
+
+[ "$CLI_ONLY" -eq "0" ] && apt_remove \
+    mysql-workbench \
 
 # needed for MakeMKV (see: http://www.makemkv.com/forum2/viewtopic.php?f=3&t=224)
 [ "$CLI_ONLY" -eq "0" ] && apt_get \
@@ -435,7 +450,7 @@ if [ "$CLI_ONLY" -eq "0" ]; then
     find . -maxdepth 1 -type f -name '*.deb' -mtime +1 -delete
 
     wget -c --no-use-server-timestamps --content-disposition https://go.microsoft.com/fwlink/?LinkID=760868 || exit 1
-    wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-5.1.68_qt5.amd64.deb || exit 1
+    wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-5.2.00_qt5.amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://github.com/ramboxapp/community-edition/releases/download/0.6.2/Rambox-0.6.2-linux-amd64.deb || exit 1
@@ -720,7 +735,7 @@ EOF
         fi
 
         # create a second x11vnc service for the lock screen
-        if [ ! -f /lib/systemd/system/x11vnc-locker.service ]; then
+        if [ "$XDG_CURRENT_DESKTOP" == "XFCE" -a ! -f /lib/systemd/system/x11vnc-locker.service ]; then
 
             sudo tee "/lib/systemd/system/x11vnc-locker.service" >/dev/null <<EOF
 [Unit]
@@ -800,9 +815,5 @@ fi
 
 echo -e "\n\nDone. To complete the installation of libdvdcss, you may need to run: sudo dpkg-reconfigure libdvd-pkg"
 
-if [ "$DRIVER_ERRORS" -ne "0" ]; then
-
-    echo -e "\nIMPORTANT: an error was encountered while installing missing drivers. Run 'ubuntu-drivers autoinstall' to try again."
-
-fi
+echo -e "\n\nYou may also want to install third-party drivers: sudo ubuntu-drivers autoinstall"
 
