@@ -318,6 +318,8 @@ fi
 
 # desktop essentials
 [ "$CLI_ONLY" -eq "0" ] && apt_get \
+    abcde \
+    eyed3 \
     filezilla \
     firefox \
     fonts-symbola \
@@ -331,6 +333,7 @@ fi
     handbrake-gtk \
     inkscape \
     keepassxc \
+    lame \
     libdvd-pkg \
     libreoffice \
     mkvtoolnix \
@@ -349,7 +352,7 @@ fi
     rapid-photo-downloader \
 
 apt_get \
-    libmediainfo0v5 \
+    mediainfo \
 
 # development
 apt_get \
