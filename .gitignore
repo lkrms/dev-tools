@@ -1,3 +1,4 @@
+.vscode/*
 *.code-*
 *.sublime-*
 scripts/exif-settings
