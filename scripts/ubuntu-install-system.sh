@@ -453,7 +453,7 @@ if [ "$CLI_ONLY" -eq "0" ]; then
     find . -maxdepth 1 -type f -name '*.deb' -mtime +1 -delete
 
     wget -c --no-use-server-timestamps --content-disposition https://go.microsoft.com/fwlink/?LinkID=760868 || exit 1
-    wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-5.2.00_qt5.amd64.deb || exit 1
+    wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-5.2.11_qt5.amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://github.com/ramboxapp/community-edition/releases/download/0.6.2/Rambox-0.6.2-linux-amd64.deb || exit 1
