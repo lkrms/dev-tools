@@ -28,7 +28,23 @@ elif [ -d "$OUTPUT_FILE" ]; then
 
 fi
 
-pandoc --number-sections -V geometry:margin=2cm -V papersize=a4 -o "$OUTPUT_FILE" "$1" || exit 2
+function add_option {
+
+    PANDOC_OPTIONS[${#PANDOC_OPTIONS[@]}]="$1"
+
+}
+
+PANDOC_OPTIONS=(--latex-engine=lualatex --number-sections -V geometry:margin=2cm -V papersize=a4)
+
+TEMPLATE_PATH="$(dirname "$0")/$(basename "${0%.*}.latex")"
+
+if [ -e "$TEMPLATE_PATH" ]; then
+
+    add_option "--template=$TEMPLATE_PATH"
+
+fi
+
+pandoc "${PANDOC_OPTIONS[@]}" -o "$OUTPUT_FILE" "$1" || exit 2
 
 echo "Converted $1 to: $OUTPUT_FILE"
 
