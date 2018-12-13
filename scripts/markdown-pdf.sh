@@ -28,7 +28,7 @@ elif [ -d "$OUTPUT_FILE" ]; then
 
 fi
 
-pandoc -o "$OUTPUT_FILE" "$1" || exit 2
+pandoc --number-sections -V geometry:margin=2cm -V papersize=a4 -o "$OUTPUT_FILE" "$1" || exit 2
 
 echo "Converted $1 to: $OUTPUT_FILE"
 
