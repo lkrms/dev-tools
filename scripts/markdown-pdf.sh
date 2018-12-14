@@ -34,7 +34,17 @@ function add_option {
 
 }
 
-PANDOC_OPTIONS=(--latex-engine=lualatex --number-sections -V geometry:margin=2cm -V papersize=a4)
+PANDOC_OPTIONS=(--number-sections -V geometry:margin=2cm -V papersize=a4)
+
+if pandoc -h | grep -q pdf-engine; then
+
+    add_option --pdf-engine=lualatex
+
+else
+
+    add_option --latex-engine=lualatex
+
+fi
 
 TEMPLATE_PATH="$(dirname "$0")/$(basename "${0%.*}.latex")"
 

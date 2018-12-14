@@ -16,5 +16,7 @@ brew upgrade
 brew cask upgrade
 brew cleanup
 
+[ -e /Library/TeX/texbin/luaotfload-tool ] && /Library/TeX/texbin/luaotfload-tool --update
+
 echo -e "\nOperation completed at: $(date '+%c')"
 

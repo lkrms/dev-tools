@@ -70,5 +70,7 @@ if [[ $INSTALL_TEX =~ ^[Yy]$ ]]; then
 
     fi
 
+    [ -e /Library/TeX/texbin/luaotfload-tool ] && /Library/TeX/texbin/luaotfload-tool --update
+
 fi
 
