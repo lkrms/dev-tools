@@ -7,6 +7,13 @@ if [ "$(uname -s)" != "Linux" ]; then
 
 fi
 
+if [ "$EUID" -eq "0" ]; then
+
+    echo "Error: this script can't be run as root."
+    exit 1
+
+fi
+
 DISTRIB_ID="$(lsb_release -si)" || exit 2
 DISTRIB_RELEASE="$(lsb_release -sr)" || exit 2
 DISTRIB_CODENAME="$(lsb_release -sc)" || exit 2
@@ -48,10 +55,8 @@ OLD_SOURCES="$(cat /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/n
 if [ "$CLI_ONLY" -eq "0" ]; then
 
     cat /etc/apt/sources.list.d/*.list | grep -q 'eosrei/fonts' || sudo add-apt-repository -y ppa:eosrei/fonts || exit 1
+    cat /etc/apt/sources.list.d/*.list | grep -q 'phoerious/keepassxc' || sudo add-apt-repository -y ppa:phoerious/keepassxc || exit 1
     cat /etc/apt/sources.list.d/*.list | grep -q 'stebbins/handbrake-releases' || sudo add-apt-repository -y ppa:stebbins/handbrake-releases || exit 1
-
-    # touchpad-indicator
-    cat /etc/apt/sources.list.d/*.list | grep -q 'atareao/atareao' || sudo add-apt-repository -y ppa:atareao/atareao || exit 1
 
     # Ghostwriter
     cat /etc/apt/sources.list.d/*.list | grep -q 'wereturtle/ppa' || sudo add-apt-repository -y ppa:wereturtle/ppa || exit 1
@@ -62,7 +67,6 @@ if [ "$CLI_ONLY" -eq "0" ]; then
         cat /etc/apt/sources.list.d/*.list | grep -q 'caffeine-developers/ppa' || sudo add-apt-repository -y ppa:caffeine-developers/ppa || exit 1
         cat /etc/apt/sources.list.d/*.list | grep -q 'inkscape.dev/stable' || sudo add-apt-repository -y ppa:inkscape.dev/stable || exit 1
         cat /etc/apt/sources.list.d/*.list | grep -q 'linrunner/tlp' || sudo add-apt-repository -y ppa:linrunner/tlp || exit 1
-        cat /etc/apt/sources.list.d/*.list | grep -q 'phoerious/keepassxc' || sudo add-apt-repository -y ppa:phoerious/keepassxc || exit 1
         cat /etc/apt/sources.list.d/*.list | grep -q 'scribus/ppa' || sudo add-apt-repository -y ppa:scribus/ppa || exit 1
 
     else
@@ -265,6 +269,7 @@ apt_get \
     nethogs \
     openssh-server \
     powertop \
+    ppa-purge \
     pv \
     s-nail \
     screen \
@@ -273,9 +278,6 @@ apt_get \
     trickle \
     vim \
     whois \
-
-# package / dependency managers
-apt_get \
     yarn \
 
 # Pandoc
@@ -296,7 +298,6 @@ apt_remove \
     autokey-gtk \
     blueman \
     shutter \
-    touchpad-indicator \
 
 if [ "$DISTRIB_CODENAME" != "xenial" ]; then
 
@@ -311,6 +312,7 @@ fi
     gconf-editor \
     remmina \
     seahorse \
+    synaptic \
     synergy \
     tilix \
     usb-creator-gtk \
@@ -441,6 +443,9 @@ echo -e "Applying post-install tweaks...\n"
 
 if [ "$CLI_ONLY" -eq "0" ]; then
 
+    # remove previous touchpad-indicator and PPA
+    sudo ppa-purge -y ppa:atareao/atareao
+
     sudo adduser "$USER" vboxusers || exit 1
     sudo groupadd -f docker || exit 1
     sudo adduser "$USER" docker || exit 1
@@ -452,11 +457,11 @@ if [ "$CLI_ONLY" -eq "0" ]; then
     # delete package files more than 24 hours old
     find . -maxdepth 1 -type f -name '*.deb' -mtime +1 -delete
 
-    wget -c --no-use-server-timestamps --content-disposition https://go.microsoft.com/fwlink/?LinkID=760868 || exit 1
-    wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-5.2.11_qt5.amd64.deb || exit 1
+    dpkg -s code >/dev/null 2>&1 || { wget -c --no-use-server-timestamps --content-disposition https://go.microsoft.com/fwlink/?LinkID=760868 || exit 1; }
+    MPE_VERSION="5.2.11"; dpkg -s master-pdf-editor 2>/dev/null | grep -q '^Version: '"$MPE_VERSION"'$' || { wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-"$MPE_VERSION"_qt5.amd64.deb || exit 1; }
     wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
-    wget -c --no-use-server-timestamps https://github.com/ramboxapp/community-edition/releases/download/0.6.3/Rambox-0.6.3-linux-amd64.deb || exit 1
+    RB_VERSION="0.6.3"; dpkg -s rambox 2>/dev/null | grep -qE '^Version: '"$RB_VERSION"'(-[0-9]+)?$' || { wget -c --no-use-server-timestamps https://github.com/ramboxapp/community-edition/releases/download/"$RB_VERSION"/Rambox-"$RB_VERSION"-linux-amd64.deb || exit 1; }
     wget -c --no-use-server-timestamps https://go.skype.com/skypeforlinux-64.deb || exit 1
     wget -c --no-use-server-timestamps https://release.gitkraken.com/linux/gitkraken-amd64.deb || exit 1
 
@@ -706,15 +711,7 @@ if [ "$CLI_ONLY" -eq "0" ]; then
     fi
 
     # x11vnc can't currently be configured to start before login on bionic; see http://c-nergy.be/blog/?p=8984
-    if [ "$DISTRIB_CODENAME" == "xenial" -o "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
-
-        if [ "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
-
-            # reverses previous swap
-            apt_remove xscreensaver xscreensaver-data
-            apt_get light-locker
-
-        fi
+    if [ "$XDG_CURRENT_DESKTOP" == "Unity" -o "$XDG_CURRENT_DESKTOP" == "XFCE" ]; then
 
         if [ ! -f /lib/systemd/system/x11vnc.service ]; then
 
@@ -785,17 +782,11 @@ EOF
 
         gsettings set org.gnome.shell.extensions.dash-to-dock dock-position BOTTOM
         gsettings set org.gnome.shell.extensions.dash-to-dock show-apps-at-top true
-        gsettings set org.gnome.desktop.default-applications.terminal exec /usr/bin/tilix.wrapper
-        gsettings set org.gnome.desktop.default-applications.terminal exec-arg '-e'
 
         apt_get \
             caffeine \
             gnome-tweak-tool \
             indicator-multiload \
-
-        apt_remove \
-            gnome-shell-extension-pixelsaver \
-            gnome-shell-extension-system-monitor \
 
         sudo apt-get -y install libappindicator-dev && sudo PERL_MM_USE_DEFAULT=1 cpan -i Gtk2::AppIndicator
 
