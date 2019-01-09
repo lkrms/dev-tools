@@ -64,6 +64,14 @@ while read -d $'\0' FOLDER; do
 
     fi
 
+    if [ -n "$(git config --local core.fileMode)" ]; then
+
+        echo -e "Clearing core.fileMode in ${BOLD}${REPO_PATH}${NC}..."
+
+        git config --unset core.fileMode
+
+    fi
+
     echo -e "Done updating ${BOLD}${REPO_PATH}${NC}.\n\n"
 
 done < <(find -L "$SOURCE_PATH" -maxdepth 3 -type d -name .git -print0 | sort -z)
