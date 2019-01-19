@@ -144,42 +144,22 @@ function process_file {
 
     if [ "$HANDBRAKE_RESULT" -eq "0" ]; then
 
-        if [ "$DRY_RUN" -eq "0" ]; then
+        [ "$DRY_RUN" -eq "0" ] && rm "$HANDBRAKE_LOG_FILE_STDOUT"
 
-            mv -n "$TEMP_TARGET_FILE" "$TARGET_FILE"
+        # handle file moves asynchronously (to maximise CPU utilisation)
+        (
 
-            MOVE_RESULT=$?
-
-            [ "$MOVE_RESULT" -eq "0" ] && rm "$HANDBRAKE_LOG_FILE_STDOUT"
-
-        else
-
-            rm "$TEMP_TARGET_FILE"
-
-            MOVE_RESULT=0
-
-        fi
-
-        log_something "Moved $TEMP_TARGET_FILE to $TARGET_FILE (exit code $MOVE_RESULT)"
-
-        # no archiving if the temp file didn't move successfully
-        [ "$MOVE_RESULT" -eq "0" ] || return $MOVE_RESULT
-
-        if [ -z "$2" ]; then
-
-            ARCHIVE_FILE="$(sanitise_path "$ARCHIVE_PATH/$SOURCE_FOLDER/$(basename "$1")")"
-
-            [ "$DRY_RUN" -eq "0" ] && { mkdir -p "$(dirname "$ARCHIVE_FILE")" || exit 2; }
-
-            log_something "Moving: $1 to $ARCHIVE_FILE"
+            log_something "Moving: $TEMP_TARGET_FILE to $TARGET_FILE"
 
             if [ "$DRY_RUN" -eq "0" ]; then
 
-                mv -n "$1" "$ARCHIVE_FILE"
+                mv -n "$TEMP_TARGET_FILE" "$TARGET_FILE"
 
                 MOVE_RESULT=$?
 
             else
+
+                rm "$TEMP_TARGET_FILE"
 
                 MOVE_RESULT=0
 
@@ -187,13 +167,36 @@ function process_file {
 
             log_something "Move exit code: $MOVE_RESULT"
 
-            return $MOVE_RESULT
+            # no archiving if the temp file didn't move successfully
+            [ "$MOVE_RESULT" -eq "0" ] || exit
 
-        else
+            if [ -z "$2" ]; then
 
-            return 0
+                ARCHIVE_FILE="$(sanitise_path "$ARCHIVE_PATH/$SOURCE_FOLDER/$(basename "$1")")"
 
-        fi
+                [ "$DRY_RUN" -eq "0" ] && { mkdir -p "$(dirname "$ARCHIVE_FILE")" || exit 2; }
+
+                log_something "Moving: $1 to $ARCHIVE_FILE"
+
+                if [ "$DRY_RUN" -eq "0" ]; then
+
+                    mv -n "$1" "$ARCHIVE_FILE"
+
+                    MOVE_RESULT=$?
+
+                else
+
+                    MOVE_RESULT=0
+
+                fi
+
+                log_something "Move exit code: $MOVE_RESULT"
+
+            fi
+
+        ) &
+
+        return 0
 
     else
 
@@ -232,13 +235,15 @@ function process_dvd {
 
     fi
 
-    log_something "Encoding: $1 (title $2) to $TARGET_FILE with preset: $HANDBRAKE_PRESET"
+    TEMP_TARGET_FILE="$(mktemp "/tmp/$SOURCE_NAME.$(date +'%s').XXX.$TARGET_EXTENSION")" || exit 2
+
+    log_something "Encoding: $1 (title $2) to $TEMP_TARGET_FILE with preset: $HANDBRAKE_PRESET"
 
     if [ "$DRY_RUN" -eq "0" ]; then
 
         mkdir -p "$(dirname "$TARGET_FILE")" || exit 2
 
-        HandBrakeCLI --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --title "$2" --output "$TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) </dev/null
+        HandBrakeCLI --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --title "$2" --output "$TEMP_TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) </dev/null
 
         HANDBRAKE_RESULT=$?
 
@@ -254,21 +259,20 @@ function process_dvd {
 
         [ "$DRY_RUN" -eq "0" ] && rm "$HANDBRAKE_LOG_FILE_STDOUT"
 
-        if [ -z "$3" ]; then
+        # handle file moves asynchronously (to maximise CPU utilisation)
+        (
 
-            ARCHIVE_FILE="$(sanitise_path "$ARCHIVE_PATH/$SOURCE_FOLDER/$(basename "$1")")"
-
-            [ "$DRY_RUN" -eq "0" ] && { mkdir -p "$(dirname "$ARCHIVE_FILE")" || exit 2; }
-
-            log_something "Moving: $1 to $ARCHIVE_FILE"
+            log_something "Moving: $TEMP_TARGET_FILE to $TARGET_FILE"
 
             if [ "$DRY_RUN" -eq "0" ]; then
 
-                mv -n "$1" "$ARCHIVE_FILE"
+                mv -n "$TEMP_TARGET_FILE" "$TARGET_FILE"
 
                 MOVE_RESULT=$?
 
             else
+
+                rm "$TEMP_TARGET_FILE"
 
                 MOVE_RESULT=0
 
@@ -276,17 +280,40 @@ function process_dvd {
 
             log_something "Move exit code: $MOVE_RESULT"
 
-            return $MOVE_RESULT
+            # no archiving if the temp file didn't move successfully
+            [ "$MOVE_RESULT" -eq "0" ] || exit
 
-        else
+            if [ -z "$3" ]; then
 
-            return 0
+                ARCHIVE_FILE="$(sanitise_path "$ARCHIVE_PATH/$SOURCE_FOLDER/$(basename "$1")")"
 
-        fi
+                [ "$DRY_RUN" -eq "0" ] && { mkdir -p "$(dirname "$ARCHIVE_FILE")" || exit 2; }
+
+                log_something "Moving: $1 to $ARCHIVE_FILE"
+
+                if [ "$DRY_RUN" -eq "0" ]; then
+
+                    mv -n "$1" "$ARCHIVE_FILE"
+
+                    MOVE_RESULT=$?
+
+                else
+
+                    MOVE_RESULT=0
+
+                fi
+
+                log_something "Move exit code: $MOVE_RESULT"
+
+            fi
+
+        ) &
+
+        return 0
 
     else
 
-        [ "$DRY_RUN" -eq "0" -a -e "$TARGET_FILE" ] && mv "$TARGET_FILE" "$TARGET_FILE.delete"
+        [ "$DRY_RUN" -eq "0" -a -e "$TEMP_TARGET_FILE" ] && mv "$TEMP_TARGET_FILE" "$TEMP_TARGET_FILE.delete"
 
         return 2
 
@@ -446,3 +473,5 @@ while [ -n "$SOURCE_PATH" ]; do
     SOURCE_PATH2=
 
 done
+
+wait
