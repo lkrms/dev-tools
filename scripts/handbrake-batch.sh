@@ -130,7 +130,7 @@ function process_file {
 
         mkdir -p "$(dirname "$TARGET_FILE")" || exit 2
 
-        HandBrakeCLI --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --output "$TEMP_TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) </dev/null
+        HandBrakeCLI --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --output "$TEMP_TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2)
 
         HANDBRAKE_RESULT=$?
 
@@ -243,7 +243,7 @@ function process_dvd {
 
         mkdir -p "$(dirname "$TARGET_FILE")" || exit 2
 
-        HandBrakeCLI --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --title "$2" --output "$TEMP_TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) </dev/null
+        HandBrakeCLI --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --title "$2" --output "$TEMP_TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2)
 
         HANDBRAKE_RESULT=$?
 
@@ -375,7 +375,7 @@ while [ -n "$SOURCE_PATH" ]; do
     # movies first
     if [ -e "$SOURCE_PATH/titles.list" ]; then
 
-        while IFS=',' read -r DVD_SOURCE DVD_TITLE; do
+        while IFS=',' read -u 3 -r DVD_SOURCE DVD_TITLE; do
 
             if [ ! -z "$DVD_SOURCE" -a -e "$SOURCE_PATH/$DVD_SOURCE" -a ! -z "$DVD_TITLE" ]; then
 
@@ -383,18 +383,18 @@ while [ -n "$SOURCE_PATH" ]; do
 
             fi
 
-        done < "$SOURCE_PATH/titles.list"
+        done 3< "$SOURCE_PATH/titles.list"
 
     fi
 
-    while read -d $'\0' SOURCE_FILE; do
+    while read -u 3 -d $'\0' SOURCE_FILE; do
 
         process_file "$SOURCE_FILE"
 
-    done < <(find "$SOURCE_PATH" -maxdepth 1 -type f -name '*.mkv' ! -iname '* - Side *' ! -name '.*' -print0 | sort -z)
+    done 3< <(find "$SOURCE_PATH" -maxdepth 1 -type f -name '*.mkv' ! -iname '* - Side *' ! -name '.*' -print0 | sort -z)
 
     # TV shows second
-    while read -d $'\0' FOLDER; do
+    while read -u 4 -d $'\0' FOLDER; do
 
         RELATIVE_FOLDER="${FOLDER/#$SOURCE_PATH/}"
         RELATIVE_FOLDER="${RELATIVE_FOLDER/#\//}"
@@ -417,7 +417,7 @@ while [ -n "$SOURCE_PATH" ]; do
 
         if [ -e "$FOLDER/titles.list" ]; then
 
-            while IFS=',' read -r DVD_SOURCE DVD_TITLE; do
+            while IFS=',' read -u 3 -r DVD_SOURCE DVD_TITLE; do
 
                 let EPISODE=EPISODE+1
 
@@ -427,17 +427,17 @@ while [ -n "$SOURCE_PATH" ]; do
 
                 fi
 
-            done < "$FOLDER/titles.list"
+            done 3< "$FOLDER/titles.list"
 
         fi
 
-        while read -d $'\0' SOURCE_FILE; do
+        while read -u 3 -d $'\0' SOURCE_FILE; do
 
             let EPISODE=EPISODE+1
 
             process_file "$SOURCE_FILE" "${SERIES_NAME}${SEASON_NAME}_E$(printf "%02d" $EPISODE)" || let ERRORS=ERRORS+1
 
-        done < <(find "$FOLDER" -maxdepth 1 -type f -name '*.mkv' ! -iname '* - Side *' ! -name '.*' -print0 | sort -z)
+        done 3< <(find "$FOLDER" -maxdepth 1 -type f -name '*.mkv' ! -iname '* - Side *' ! -name '.*' -print0 | sort -z)
 
         if [ "$EPISODE" -gt "0" -a "$ERRORS" -eq "0" ]; then
 
@@ -463,7 +463,7 @@ while [ -n "$SOURCE_PATH" ]; do
 
         fi
 
-    done < <(find "$SOURCE_PATH" -mindepth 1 -maxdepth 2 -type d ! -path '*/__*' ! -name '.*' -print0 | sort -z)
+    done 4< <(find "$SOURCE_PATH" -mindepth 1 -maxdepth 2 -type d ! -path '*/__*' ! -name '.*' -print0 | sort -z)
 
     SOURCE_PATH="$SOURCE_PATH2"
     ARCHIVE_PATH="$ARCHIVE_PATH2"
