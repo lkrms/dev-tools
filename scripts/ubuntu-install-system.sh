@@ -260,6 +260,7 @@ APT_REMOVE_PENDING=()
 apt_get \
     aptitude \
     attr \
+    cifs-utils \
     debconf-utils \
     hfsprogs \
     hwinfo \
