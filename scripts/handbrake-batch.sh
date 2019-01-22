@@ -98,9 +98,13 @@ function check_time {
     if [ "$FINISH_AFTER" -ne "0" -a "$FINISH_AFTER" -le "$(date +'%s')" ]; then
 
         log_something "Halting queue processing as requested."
+
+        wait
+
         exit
 
     fi
+
 }
 
 function process_file {
