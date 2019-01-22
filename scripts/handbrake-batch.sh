@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# single instance check (not race-proof, but adequate for our purposes)
+if pidof -x -o $$ -o $PPID "$(basename "$0")" >/dev/null; then
+
+    echo "$(basename "$0") is already running. Exiting."
+    exit 0
+
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")"; pwd -P)"
 
 SOURCE_PATH=
@@ -130,7 +138,7 @@ function process_file {
 
         mkdir -p "$(dirname "$TARGET_FILE")" || exit 2
 
-        HandBrakeCLI --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --output "$TEMP_TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2)
+        HandBrakeCLI --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --output "$TEMP_TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) <&6
 
         HANDBRAKE_RESULT=$?
 
@@ -243,7 +251,7 @@ function process_dvd {
 
         mkdir -p "$(dirname "$TARGET_FILE")" || exit 2
 
-        HandBrakeCLI --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --title "$2" --output "$TEMP_TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2)
+        HandBrakeCLI --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --title "$2" --output "$TEMP_TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) <&6
 
         HANDBRAKE_RESULT=$?
 
@@ -338,6 +346,11 @@ LOG_DIR="$SCRIPT_DIR/log"
 LOG_FILE_BASE="$LOG_DIR/$(basename "$0")"
 LOG_FILE_BASE="${LOG_FILE_BASE/%.sh/}"
 LOG_FILE="$LOG_FILE_BASE.log"
+RUN_DIR="$SCRIPT_DIR/run"
+FIFO_FILE="$RUN_DIR/$(basename "$0")"
+FIFO_FILE="${FIFO_FILE/%.sh/}"
+FIFO_FILE="$FIFO_FILE.fifo"
+FIFO_PID=
 
 DRY_RUN=0
 FINISH_AFTER=0
@@ -356,17 +369,34 @@ if [ "$1" == "dry" ]; then
 
     DRY_RUN=1
 
-elif [ -n "$1" ]; then
-
-    FINISH_AFTER=$("$DATE_COMMAND" -d "$1" +'%s' 2>/dev/null) || { echo "Invalid time: $1"; exit 1; }
-
-    mkdir -p "$LOG_DIR" || exit 2
-
-    log_something "Queue processing will not continue after: $("$DATE_COMMAND" -d "@$FINISH_AFTER")"
-
 else
 
-    mkdir -p "$LOG_DIR" || exit 2
+    mkdir -p "$LOG_DIR" "$RUN_DIR" || exit 2
+
+    [ -p "$FIFO_FILE" ] || mkfifo "$FIFO_FILE" || { echo "Unable to create named pipe: $FIFO_FILE"; exit 1; }
+
+    exec 7<> "$FIFO_FILE"
+    exec 6<> <(:)
+
+    (
+        while read -u 7 FIFO_COMMAND; do
+
+            echo "$FIFO_COMMAND" >&6
+
+        done
+    ) &
+
+    FIFO_PID=$!
+
+    log_something "PID of FIFO loop is $FIFO_PID"
+
+    if [ -n "$1" ]; then
+
+        FINISH_AFTER=$("$DATE_COMMAND" -d "$1" +'%s' 2>/dev/null) || { echo "Invalid time: $1"; exit 1; }
+
+        log_something "Queue processing will not continue after: $("$DATE_COMMAND" -d "@$FINISH_AFTER")"
+
+    fi
 
 fi
 
@@ -473,5 +503,7 @@ while [ -n "$SOURCE_PATH" ]; do
     SOURCE_PATH2=
 
 done
+
+# [ -n "$FIFO_PID" ] && kill "$FIFO_PID"
 
 wait
