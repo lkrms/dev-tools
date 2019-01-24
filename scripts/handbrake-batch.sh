@@ -99,6 +99,8 @@ function check_time {
 
         log_something "Halting queue processing as requested."
 
+        [ -n "$FIFO_PID" ] && kill "$FIFO_PID"
+
         wait
 
         exit
@@ -508,6 +510,7 @@ while [ -n "$SOURCE_PATH" ]; do
 
 done
 
-# [ -n "$FIFO_PID" ] && kill "$FIFO_PID"
+# otherwise we'll "wait" forever
+[ -n "$FIFO_PID" ] && kill "$FIFO_PID"
 
 wait
