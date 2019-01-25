@@ -93,19 +93,72 @@ function sanitise_path {
 
 }
 
+function clear_buffer {
+
+    while read -u $1 -t 0; do
+
+        read -u $1
+
+    done
+
+}
+
 function check_time {
+
+    if [ "$DRY_RUN" -eq "0" ]; then
+
+        while [ "$IS_PAUSED" -eq "1" ] || read -u 8 -t 0; do
+
+            if ! read -u 8 -t 0; then
+
+                sleep 1
+                continue
+
+            fi
+
+            read -u 8 NEW_FINISH_AFTER
+
+            case "$NEW_FINISH_AFTER" in
+
+            p)
+
+                IS_PAUSED=1
+                ;;
+
+            r)
+
+                IS_PAUSED=0
+                ;;
+
+            *)
+
+                FINISH_AFTER="$NEW_FINISH_AFTER"
+                ;;
+
+            esac
+
+        done
+
+    fi
 
     if [ "$FINISH_AFTER" -ne "0" -a "$FINISH_AFTER" -le "$(date +'%s')" ]; then
 
         log_something "Halting queue processing as requested."
 
-        [ -n "$FIFO_PID" ] && kill "$FIFO_PID"
-
-        wait
-
-        exit
+        stop_batch
 
     fi
+
+}
+
+function stop_batch {
+
+    # otherwise we'll "wait" forever
+    [ -n "$FIFO_PID" ] && kill "$FIFO_PID"
+
+    wait 2>/dev/null
+
+    exit
 
 }
 
@@ -143,6 +196,8 @@ function process_file {
     if [ "$DRY_RUN" -eq "0" ]; then
 
         mkdir -p "$(dirname "$TARGET_FILE")" || exit 2
+
+        clear_buffer 6
 
         HandBrakeCLI --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --output "$TEMP_TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) <&6
 
@@ -257,6 +312,8 @@ function process_dvd {
 
         mkdir -p "$(dirname "$TARGET_FILE")" || exit 2
 
+        clear_buffer 6
+
         HandBrakeCLI --preset-import-gui --preset "$HANDBRAKE_PRESET" --input "$1" --title "$2" --output "$TEMP_TARGET_FILE" > >(tee "$HANDBRAKE_LOG_FILE_STDOUT") 2> >(tee "$HANDBRAKE_LOG_FILE" >&2) <&6
 
         HANDBRAKE_RESULT=$?
@@ -360,6 +417,7 @@ FIFO_PID=
 
 DRY_RUN=0
 FINISH_AFTER=0
+IS_PAUSED=0
 
 DATE_COMMAND=date
 
@@ -383,18 +441,38 @@ else
 
     exec 7<> "$FIFO_FILE"
     exec 6<> <(:)
+    exec 8<> <(:)
 
     (
         while read -u 7 FIFO_COMMAND; do
 
-            echo "$FIFO_COMMAND" >&6
+            case "$FIFO_COMMAND" in
+
+            p|r)
+
+                # pass HandBrakeCLI commands directly
+                echo "$FIFO_COMMAND" >&6
+                echo "$FIFO_COMMAND" >&8
+                ;;
+
+            0)
+                echo "0" >&8
+                log_something "Processing will continue until the queue is empty."
+                ;;
+
+            *)
+
+                FINISH_AFTER=$("$DATE_COMMAND" -d "$FIFO_COMMAND" +'%s' 2>/dev/null) || { echo "Invalid time: $FIFO_COMMAND"; continue; }
+                echo "$FINISH_AFTER" >&8
+                log_something "Queue processing will not continue after: $("$DATE_COMMAND" -d "@$FINISH_AFTER")"
+                ;;
+
+            esac
 
         done
     ) &
 
     FIFO_PID=$!
-
-    log_something "PID of FIFO loop is $FIFO_PID"
 
     if [ -n "$1" ]; then
 
@@ -510,7 +588,4 @@ while [ -n "$SOURCE_PATH" ]; do
 
 done
 
-# otherwise we'll "wait" forever
-[ -n "$FIFO_PID" ] && kill "$FIFO_PID"
-
-wait
+stop_batch
