@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # single instance check (not race-proof, but adequate for our purposes)
-if pidof -x -o $$ -o $PPID "$(basename "$0")" >/dev/null; then
+if ps -ax | grep "$(basename "$0")" | grep -v grep | awk '{print $1}' | grep -qEv '\b('"$$"'|'"$PPID"')\b'; then
 
     echo "$(basename "$0") is already running. Exiting."
     exit 0
@@ -95,9 +95,10 @@ function sanitise_path {
 
 function clear_buffer {
 
-    while read -u $1 -t 0; do
+    # macOS doesn't play nice with -t 0
+    while read -u $1 -t 1; do
 
-        read -u $1
+        :
 
     done
 
@@ -107,16 +108,16 @@ function check_time {
 
     if [ "$DRY_RUN" -eq "0" ]; then
 
-        while [ "$IS_PAUSED" -eq "1" ] || read -u 8 -t 0; do
+        local NEW_FINISH_AFTER=
 
-            if ! read -u 8 -t 0; then
+        while [ "$IS_PAUSED" -eq "1" ] || read -u 8 -t 1 NEW_FINISH_AFTER; do
+
+            if [ -z "$NEW_FINISH_AFTER" ]; then
 
                 sleep 1
                 continue
 
             fi
-
-            read -u 8 NEW_FINISH_AFTER
 
             case "$NEW_FINISH_AFTER" in
 
@@ -137,6 +138,8 @@ function check_time {
 
             esac
 
+            NEW_FINISH_AFTER=
+
         done
 
     fi
@@ -145,7 +148,7 @@ function check_time {
 
         log_something "Halting queue processing as requested."
 
-        stop_batch
+        exit
 
     fi
 
@@ -158,7 +161,10 @@ function stop_batch {
 
     wait 2>/dev/null
 
-    exit
+    [ -e "$HANDBRAKE_FIFO_FILE" ] && { exec 6>&-; rm "$HANDBRAKE_FIFO_FILE"; }
+    [ -e "$BATCH_FIFO_FILE" ] && { exec 8>&-; rm "$BATCH_FIFO_FILE"; }
+
+    kill 0
 
 }
 
@@ -414,6 +420,8 @@ FIFO_FILE="$RUN_DIR/$(basename "$0")"
 FIFO_FILE="${FIFO_FILE/%.sh/}"
 FIFO_FILE="$FIFO_FILE.fifo"
 FIFO_PID=
+HANDBRAKE_FIFO_FILE=
+BATCH_FIFO_FILE=
 
 DRY_RUN=0
 FINISH_AFTER=0
@@ -439,9 +447,15 @@ else
 
     [ -p "$FIFO_FILE" ] || mkfifo "$FIFO_FILE" || { echo "Unable to create named pipe: $FIFO_FILE"; exit 1; }
 
+    HANDBRAKE_FIFO_FILE="$(mktemp -u "/tmp/$(basename "$0").$(date +'%s').XXX.hb.fifo")"
+    mkfifo "$HANDBRAKE_FIFO_FILE" || { echo "Unable to create named pipe: $HANDBRAKE_FIFO_FILE"; exit 1; }
+
+    BATCH_FIFO_FILE="$(mktemp -u "/tmp/$(basename "$0").$(date +'%s').XXX.fifo")"
+    mkfifo "$BATCH_FIFO_FILE" || { echo "Unable to create named pipe: $BATCH_FIFO_FILE"; exit 1; }
+
     exec 7<> "$FIFO_FILE"
-    exec 6<> <(:)
-    exec 8<> <(:)
+    exec 6<> "$HANDBRAKE_FIFO_FILE"
+    exec 8<> "$BATCH_FIFO_FILE"
 
     (
         while read -u 7 FIFO_COMMAND; do
@@ -481,6 +495,9 @@ else
         log_something "Queue processing will not continue after: $("$DATE_COMMAND" -d "@$FINISH_AFTER")"
 
     fi
+
+    trap "exit" INT TERM
+    trap "stop_batch" EXIT
 
 fi
 
@@ -587,5 +604,3 @@ while [ -n "$SOURCE_PATH" ]; do
     SOURCE_PATH2=
 
 done
-
-stop_batch
