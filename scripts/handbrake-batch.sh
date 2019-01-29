@@ -110,7 +110,7 @@ function check_time {
 
         local NEW_FINISH_AFTER=
 
-        while [ "$IS_PAUSED" -eq "1" ] || read -u 8 -t 1 NEW_FINISH_AFTER; do
+        while read -u 8 -t 1 NEW_FINISH_AFTER || [ "$IS_PAUSED" -eq "1" ]; do
 
             if [ -z "$NEW_FINISH_AFTER" ]; then
 
@@ -170,8 +170,6 @@ function stop_batch {
 
 function process_file {
 
-    check_time
-
     SOURCE_FOLDER="$(dirname "$1")"
     SOURCE_FOLDER="${SOURCE_FOLDER/#$SOURCE_PATH/}"
     SOURCE_FOLDER="${SOURCE_FOLDER/#\//}"
@@ -194,6 +192,8 @@ function process_file {
         return 0
 
     fi
+
+    check_time
 
     TEMP_TARGET_FILE="$(mktemp "/tmp/$SOURCE_NAME.$(date +'%s').XXX.$TARGET_EXTENSION")" || exit 2
 
@@ -285,8 +285,6 @@ function process_file {
 
 function process_dvd {
 
-    check_time
-
     SOURCE_FOLDER="$(dirname "$1")"
     SOURCE_FOLDER="${SOURCE_FOLDER/#$SOURCE_PATH/}"
     SOURCE_FOLDER="${SOURCE_FOLDER/#\//}"
@@ -309,6 +307,8 @@ function process_dvd {
         return 0
 
     fi
+
+    check_time
 
     TEMP_TARGET_FILE="$(mktemp "/tmp/$SOURCE_NAME.$(date +'%s').XXX.$TARGET_EXTENSION")" || exit 2
 
