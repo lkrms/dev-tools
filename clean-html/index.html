@@ -205,7 +205,7 @@ $(function () {
         p.find("a[rel]").removeAttr("rel");
 
         // matched elements are removed from the tree, their children moved up to take their place
-        p.find("font, a[name], li > p, a u").not("a[href]").each(function () {
+        p.find("font, a, li > p, a u, u u").not("a[href]").each(function () {
 
             $(this).replaceWith($(this).contents());
 
@@ -312,7 +312,7 @@ $(function () {
         // specify target=_blank for all links (except mailto's)
         p.find("a").each(function () {
 
-            if (!$(this).attr("href").match(/^mailto:/)) {
+            if (!this.href.match(/^mailto:/)) {
 
                 $(this).attr("target", "_blank");
 
