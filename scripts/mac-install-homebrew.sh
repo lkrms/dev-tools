@@ -16,7 +16,6 @@ brew install \
     coreutils \
     ghostscript \
     lftp \
-    micro \
     pandoc \
     pv \
     rsync \
@@ -33,6 +32,7 @@ if [[ $INSTALL_DEV_TOOLS =~ ^[Yy]$ ]]; then
     brew install \
         ant \
         autoconf \
+        composer \
         gradle \
         mariadb \
         nvm \
@@ -56,7 +56,7 @@ if [[ $INSTALL_POWERSHELL =~ ^[Yy]$ ]]; then
 
 fi
 
-read -p "Install TeX? [y/n] " -n 1 -r INSTALL_TEX
+read -p "Install TeX? (WARNING: very large) [y/n] " -n 1 -r INSTALL_TEX
 
 echo
 
