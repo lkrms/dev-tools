@@ -252,6 +252,8 @@ APT_REMOVE_PENDING=()
 [ "$CLI_ONLY" -eq "0" ] && apt_get \
     acpi-call-dkms \
     dkms \
+    linux-tools-generic \
+    linux-cloud-tools-generic \
     tlp \
     tlp-rdw \
     tp-smapi-dkms \
@@ -284,8 +286,7 @@ apt_get \
 # Pandoc
 apt_get \
     pandoc \
-    texlive-fonts-recommended \
-    texlive-latex-recommended \
+    texlive \
     texlive-luatex \
 
 # PDF manipulation
@@ -453,17 +454,18 @@ if [ "$CLI_ONLY" -eq "0" ]; then
 
     dpkg -s code >/dev/null 2>&1 || { wget -c --no-use-server-timestamps --content-disposition https://go.microsoft.com/fwlink/?LinkID=760868 || exit 1; }
     dpkg -s skypeforlinux >/dev/null 2>&1 || { wget -c --no-use-server-timestamps https://go.skype.com/skypeforlinux-64.deb || exit 1; }
-    CARET_VERSION="4.0.0-rc22"; dpkg -s caret-beta-desktop 2>/dev/null | grep -q '^Version: '"$CARET_VERSION"'$' || { wget -c --no-use-server-timestamps https://github.com/careteditor/releases-beta/releases/download/"$CARET_VERSION"/caret-beta.deb || exit 1; }
-    MPE_VERSION="5.3.12"; dpkg -s master-pdf-editor 2>/dev/null | grep -q '^Version: '"$MPE_VERSION"'$' || { wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-"$MPE_VERSION"_qt5.amd64.deb || exit 1; }
+    CARET_VERSION="4.0.0-rc23"; dpkg -s caret-beta-desktop 2>/dev/null | grep -q '^Version: '"$CARET_VERSION"'$' || { wget -c --no-use-server-timestamps https://github.com/careteditor/releases-beta/releases/download/"$CARET_VERSION"/caret-beta.deb || exit 1; }
+    MPE_VERSION="5.3.16"; dpkg -s master-pdf-editor 2>/dev/null | grep -q '^Version: '"$MPE_VERSION"'$' || { wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-"$MPE_VERSION"_qt5.amd64.deb || exit 1; }
     RB_VERSION="0.6.3"; dpkg -s rambox 2>/dev/null | grep -qE '^Version: '"$RB_VERSION"'(-[0-9]+)?$' || { wget -c --no-use-server-timestamps https://github.com/ramboxapp/community-edition/releases/download/"$RB_VERSION"/Rambox-"$RB_VERSION"-linux-amd64.deb || exit 1; }
     wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
-    wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
+    #wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
     wget -c --no-use-server-timestamps https://release.gitkraken.com/linux/gitkraken-amd64.deb || exit 1
 
     if [ "$DISTRIB_CODENAME" == "xenial" ]; then
 
         wget -c --no-use-server-timestamps https://downloads.slack-edge.com/linux_releases/slack-desktop-3.2.1-amd64.deb || exit 1
         wget -c --no-use-server-timestamps https://github.com/hluk/CopyQ/releases/download/v3.1.1/copyq_3.1.1_Ubuntu_16.04-1_amd64.deb || exit 1
+        wget -c --no-use-server-timestamps https://github.com/sindresorhus/caprine/releases/download/v2.30.0/caprine_2.30.0_amd64.deb || exit 1
 
     else
 
