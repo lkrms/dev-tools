@@ -576,21 +576,25 @@ while [ -n "$SOURCE_PATH" ]; do
 
             [ "$DRY_RUN" -eq "0" ] && { mkdir -p "$(dirname "$ARCHIVE_FOLDER")" || exit 2; }
 
-            log_something "Moving folder: $FOLDER to $ARCHIVE_FOLDER"
+            (
 
-            if [ "$DRY_RUN" -eq "0" ]; then
+                log_something "Moving folder: $FOLDER to $ARCHIVE_FOLDER"
 
-                mv -n "$FOLDER" "$ARCHIVE_FOLDER"
+                if [ "$DRY_RUN" -eq "0" ]; then
 
-                MOVE_RESULT=$?
+                    mv -n "$FOLDER" "$ARCHIVE_FOLDER"
 
-            else
+                    MOVE_RESULT=$?
 
-                MOVE_RESULT=0
+                else
 
-            fi
+                    MOVE_RESULT=0
 
-            log_something "Move exit code: $MOVE_RESULT"
+                fi
+
+                log_something "Move exit code: $MOVE_RESULT"
+
+            ) &
 
         fi
 
