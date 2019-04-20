@@ -274,6 +274,7 @@ apt_get \
     powertop \
     ppa-purge \
     pv \
+    reptyr \
     s-nail \
     screen \
     syslinux-utils \
@@ -455,7 +456,7 @@ if [ "$CLI_ONLY" -eq "0" ]; then
     dpkg -s code >/dev/null 2>&1 || { wget -c --no-use-server-timestamps --content-disposition https://go.microsoft.com/fwlink/?LinkID=760868 || exit 1; }
     dpkg -s skypeforlinux >/dev/null 2>&1 || { wget -c --no-use-server-timestamps https://go.skype.com/skypeforlinux-64.deb || exit 1; }
     CARET_VERSION="4.0.0-rc23"; dpkg -s caret-beta-desktop 2>/dev/null | grep -q '^Version: '"$CARET_VERSION"'$' || { wget -c --no-use-server-timestamps https://github.com/careteditor/releases-beta/releases/download/"$CARET_VERSION"/caret-beta.deb || exit 1; }
-    MPE_VERSION="5.3.16"; dpkg -s master-pdf-editor 2>/dev/null | grep -q '^Version: '"$MPE_VERSION"'$' || { wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-"$MPE_VERSION"_qt5.amd64.deb || exit 1; }
+    MPE_VERSION="5.4.04"; dpkg -s master-pdf-editor 2>/dev/null | grep -q '^Version: '"$MPE_VERSION"'$' || { wget -c --no-use-server-timestamps https://code-industry.net/public/master-pdf-editor-"$MPE_VERSION"_qt5.amd64.deb || exit 1; }
     RB_VERSION="0.6.3"; dpkg -s rambox 2>/dev/null | grep -qE '^Version: '"$RB_VERSION"'(-[0-9]+)?$' || { wget -c --no-use-server-timestamps https://github.com/ramboxapp/community-edition/releases/download/"$RB_VERSION"/Rambox-"$RB_VERSION"-linux-amd64.deb || exit 1; }
     wget -c --no-use-server-timestamps https://dbeaver.jkiss.org/files/dbeaver-ce_latest_amd64.deb || exit 1
     #wget -c --no-use-server-timestamps https://download.teamviewer.com/download/linux/teamviewer_amd64.deb || exit 1
