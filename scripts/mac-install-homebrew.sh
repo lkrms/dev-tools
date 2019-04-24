@@ -14,11 +14,13 @@ brew cask upgrade
 
 brew install \
     coreutils \
+    exiftool \
     ghostscript \
     lftp \
     pandoc \
     pv \
     rsync \
+    telnet \
     wget \
     youtube-dl \
     || exit 2
@@ -35,6 +37,7 @@ if [[ $INSTALL_DEV_TOOLS =~ ^[Yy]$ ]]; then
         composer \
         gradle \
         mariadb \
+        msmtp \
         nvm \
         yarn \
         || exit 2
@@ -56,21 +59,15 @@ if [[ $INSTALL_POWERSHELL =~ ^[Yy]$ ]]; then
 
 fi
 
-read -p "Install TeX? (WARNING: very large) [y/n] " -n 1 -r INSTALL_TEX
+read -p "Install BasicTeX? [y/n] " -n 1 -r INSTALL_TEX
 
 echo
 
 if [[ $INSTALL_TEX =~ ^[Yy]$ ]]; then
 
-    brew cask install mactex || exit 2
-
-    if [ ! -e /usr/local/bin/pdflatex -a -e /Library/TeX/Root/bin/x86_64-darwin/pdflatex ]; then
-
-        ln -s /Library/TeX/Root/bin/x86_64-darwin/pdflatex /usr/local/bin/pdflatex
-
-    fi
-
-    [ -e /Library/TeX/texbin/luaotfload-tool ] && /Library/TeX/texbin/luaotfload-tool --update
+    brew cask install basictex || exit 2
+    sudo tlmgr update --self && sudo tlmgr install collection-fontsrecommended || exit 2
+    luaotfload-tool --update || exit 2
 
 fi
 

@@ -625,6 +625,7 @@ sudo mkdir -p /usr/local/lib/php/extensions && sudo chown ${USER}:$(id -g) /usr/
     applyPhpSetting "$INI" error_reporting E_ALL
     applyPhpSetting "$INI" display_errors On
     applyPhpSetting "$INI" display_startup_errors On
+    applyPhpSetting "$INI" memory_limit 256M
     applyPhpSetting "$INI" xdebug.profiler_enable 0
     applyPhpSetting "$INI" xdebug.profiler_enable_trigger 1
     applyPhpSetting "$INI" xdebug.remote_enable 1

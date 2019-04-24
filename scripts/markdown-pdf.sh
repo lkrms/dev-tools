@@ -34,7 +34,7 @@ function add_option {
 
 }
 
-PANDOC_OPTIONS=(--number-sections -V geometry:margin=2cm -V papersize=a4)
+PANDOC_OPTIONS=(-V geometry:margin=2cm -V papersize=a4)
 
 if pandoc -h | grep -q pdf-engine; then
 
