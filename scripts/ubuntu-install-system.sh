@@ -261,6 +261,7 @@ APT_REMOVE_PENDING=()
 # system / network / terminal utilities
 apt_get \
     aptitude \
+    atop \
     attr \
     cifs-utils \
     debconf-utils \
@@ -278,6 +279,7 @@ apt_get \
     s-nail \
     screen \
     syslinux-utils \
+    sysstat \
     traceroute \
     trickle \
     vim \
