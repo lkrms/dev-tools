@@ -192,59 +192,88 @@ $(function () {
 
         });
 
-        // check for "normal" text nested in em's
-        var normal = p.find("*").filter(function () {
+        function retainStyle(filter, elementName) {
 
-            return this.style.fontStyle == "normal";
+            var normal = p.find("*").filter(filter);
 
-        });
+            normal.each(function () {
 
-        normal.each(function () {
+                // get the topmost element we descend from
+                var el = $(this).parents(elementName).last();
 
-            // get the topmost em element we descend from
-            var em = $(this).parents("em").last();
+                // (if we descend from one at all)
+                if (el.length) {
 
-            // (if we descend from an em at all)
-            if (em.length) {
+                    // delete any other elements between us and the topmost one
+                    $(this).parentsUntil(el, elementName).each(function () {
 
-                // delete any other <em>s between us and the topmost one
-                $(this).parentsUntil(em, "em").each(function () {
-
-                    $(this).replaceWith($(this).contents());
-
-                });
-
-                // we definitely don't want to italicise any of our parents
-                var exclude = $(this).parentsUntil(em);
-
-                // now, work down from the top and apply italics where it might remain relevant
-                var children = em.children();
-                var parents = em;
-
-                while (children.length) {
-
-                    // if we have any children that aren't explicitly "normal", italicise them
-                    children.not("em").not(normal).not(exclude).each(function () {
-
-                        var cem = $("<em></em>");
-
-                        $(this).after(cem);
-
-                        cem.append(this);
+                        $(this).replaceWith($(this).contents());
 
                     });
 
-                    parents = parents.children().not("em").not(normal);
-                    children = parents.children();
+                    // we definitely don't want to apply formatting to any of our parents
+                    var exclude = $(this).parentsUntil(el);
+
+                    // now, work down from the top and apply formatting where it might remain relevant
+                    var children = el.children();
+                    var parents = el;
+
+                    while (children.length) {
+
+                        // if we have any children that aren't explicitly "normal", apply formatting to them
+                        children.not(elementName).not(normal).not(exclude).each(function () {
+
+                            var cel = $("<" + elementName + "></" + elementName + ">");
+
+                            $(this).after(cel);
+
+                            cel.append(this);
+
+                        });
+
+                        parents = parents.children().not(elementName).not(normal);
+                        children = parents.children();
+
+                    }
+
+                    // finally, delete the topmost element
+                    el.replaceWith(el.contents());
 
                 }
 
-                // finally, delete the topmost em
-                em.replaceWith(em.contents());
+            });
+
+        }
+
+        var styleNormalFilter = function () {
+
+            return this.style.fontStyle == "normal";
+
+        }
+
+        var weightNormalFilter = function () {
+
+            switch (this.style.fontWeight) {
+
+                case "bold":
+                case "bolder":
+                case "700":
+                case "800":
+                case "900":
+                    return false;
+
+                default:
+                    return true;
 
             }
 
-        })
+        }
+
+        // check for "normal" text nested in em's, strong's, etc.
+        retainStyle(styleNormalFilter, "em");
+        retainStyle(styleNormalFilter, "i");
+        retainStyle(weightNormalFilter, "strong");
+        retainStyle(weightNormalFilter, "b");
 
         // === text-based transformations go here ===
 
@@ -270,9 +299,9 @@ $(function () {
         });
 
         // remove blocks with nothing but whitespace inside
-        if (options.deleteEmptyBlocks) {
+        p.find("div:empty, p:empty").remove();
 
-            p.find("div:empty, p:empty").remove();
+        if (options.deleteEmptyBlocks) {
 
             p.find("div, p").filter(function () {
 
