@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<title>Clean HTML</title>
-<meta charset="UTF-8">
-<link rel="stylesheet" href="styles.css">
-<script src="jquery-3.3.1.min.js"></script>
-<script src="tidy.js"></script>
-<script>
+    <title>Clean HTML</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="styles.css">
+    <script src="jquery.min.js"></script>
+    <script src="tidy.js"></script>
+    <script>
 $(function () {
 
-    function nodeFilter () {
+    function nodeFilter() {
 
         // keep: element nodes and text nodes
         // remove: comments, fragments, namespaced elements
@@ -17,23 +18,53 @@ $(function () {
 
     }
 
-    function noAttributeFilter () {
+    function noAttributeFilter() {
 
         return this.attributes.length < 1;
 
     }
 
-    function textNodeFilter () {
+    function textNodeFilter() {
 
         return this.nodeType === 3;
 
     }
 
-    function whitespace () {
+    function whitespace() {
 
         return $.parseHTML(" ");
 
     }
+
+    // NOTE: this doesn't match empty strings
+    var onlyWordSeparators = new RegExp([
+
+        '^[',
+
+        // whitespace (except \u0020, included below)
+        '\f\n\r\t\v\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff',
+
+        // Unicode: General Punctuation
+        '\u2000-\u206F',
+
+        // Unicode: Supplemental Punctuation 
+        '\u2E00-\u2E7F',
+
+        // Basic Latin (incl. space):  !"#$%&'()*+,-./
+        '\u0020-\u002F',
+
+        // Basic Latin: :;<=>?@
+        '\u003A-\u0040',
+
+        // Basic Latin: [\]^_`
+        '\u005B-\u0060',
+
+        // Basic Latin: {|}~
+        '\u007B-\u007E',
+
+        ']+$'
+
+    ].join(''));
 
     var whiteColor = $("<div></div>").css("color", "#fff").css("color");
 
@@ -161,11 +192,66 @@ $(function () {
 
         });
 
-        // text-based transformations go here
-        // TODO: detect "• " and convert to <ul>
+        // check for "normal" text nested in em's
+        var normal = p.find("*").filter(function () {
+
+            return this.style.fontStyle == "normal";
+
+        });
+
+        normal.each(function () {
+
+            // get the topmost em element we descend from
+            var em = $(this).parents("em").last();
+
+            // (if we descend from an em at all)
+            if (em.length) {
+
+                // delete any other <em>s between us and the topmost one
+                $(this).parentsUntil(em, "em").each(function () {
+
+                    $(this).replaceWith($(this).contents());
+
+                });
+
+                // we definitely don't want to italicise any of our parents
+                var exclude = $(this).parentsUntil(em);
+
+                // now, work down from the top and apply italics where it might remain relevant
+                var children = em.children();
+                var parents = em;
+
+                while (children.length) {
+
+                    // if we have any children that aren't explicitly "normal", italicise them
+                    children.not("em").not(normal).not(exclude).each(function () {
+
+                        var cem = $("<em></em>");
+
+                        $(this).after(cem);
+
+                        cem.append(this);
+
+                    });
+
+                    parents = parents.children().not("em").not(normal);
+                    children = parents.children();
+
+                }
+
+                // finally, delete the topmost em
+                em.replaceWith(em.contents());
+
+            }
+
+        })
+
+        // === text-based transformations go here ===
+
+        // convert email addresses to links (if they're not already in links)
         p.find("*").contents().filter(textNodeFilter).filter(function () {
 
-            return ! $(this).parents("a").length;
+            return !$(this).parents("a").length;
 
         }).each(function () {
 
@@ -185,6 +271,8 @@ $(function () {
 
         // remove blocks with nothing but whitespace inside
         if (options.deleteEmptyBlocks) {
+
+            p.find("div:empty, p:empty").remove();
 
             p.find("div, p").filter(function () {
 
@@ -258,7 +346,7 @@ $(function () {
 
                 $(this).replaceWith(whitespace);
 
-            } else if (this.innerText.match(/^[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,\-.\/:;<=>?@\[\]^_`{|}~ \f\n\r\t\v\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]*$/)) {
+            } else if (this.innerText.match(onlyWordSeparators)) {
 
                 // replace inline elements that only contain punctuation and/or whitespace with their contents
                 $(this).replaceWith($(this).contents());
@@ -296,12 +384,12 @@ $(function () {
 
             p.children("div, p").each(function () {
 
-                if (! $(this).next().is("ul, ol")
+                if (!$(this).next().is("ul, ol")
                     //&& ! $(this).prev().is("ul, ol")
-                    && ! ($(this).children().is("b:only-child, strong:only-child, i:only-child, em:only-child") && $(this).children().text().trim() == $(this).text().trim())
-                    ) {
+                    && !($(this).children().is("b:only-child, strong:only-child, i:only-child, em:only-child") && $(this).children().text().trim() == $(this).text().trim())
+                ) {
 
-                   $(this).after($("<div>&nbsp;</div>"))
+                    $(this).after($("<div>&nbsp;</div>"))
 
                 }
 
@@ -335,37 +423,29 @@ $(function () {
 
         }
 
-        // swap out <b> and <i> with <strong> and <em>
-        p.find("b").each(function () {
-
-            $(this).replaceWith($("<strong></strong>").append($(this).contents()));
-
-        });
-
-        p.find("i").each(function () {
-
-            $(this).replaceWith($("<em></em>").append($(this).contents()));
-
-        });
-
+        // built from https://github.com/lkrms/tidy-html5
+        // using https://emscripten.org
         // see http://api.html-tidy.org/tidy/quickref_5.6.0.html
         var tidyOptions = {
-            "indent":               "auto",
-            "indent-spaces":        2,
-            "wrap":                 0,
-            "break-before-br":      true,
-            "clean":                false,
-            "drop-empty-elements":  false,
-            "drop-empty-paras":     false,
-            "numeric-entities":     false,
-            "preserve-entities":    true,
-            "quote-marks":          true,
-            "show-body-only":       true,
-            "tidy-mark":            false
+            "break-before-br": true,
+            "drop-empty-elements": false,
+            "drop-empty-paras": false,
+            "indent-spaces": 2,
+            "indent": "auto",
+            "logical-emphasis": true,           // replace <i> with <em> and <b> with <strong>
+            "numeric-entities": false,
+            "preserve-entities": true,
+            "quote-ampersand": true,
+            "quote-marks": false,
+            "show-body-only": true,
+            "tidy-mark": false,
+            "wrap": 0
         };
 
         // tidy_html5 strips line breaks, which means whitespace can be lost, so enforce whitespace
-        var output = tidy_html5(p.html().replace(/[\r\n]+/g, " "), tidyOptions);
+        //var output = tidy_html5(p.html().replace(/[\r\n]+/g, " "), tidyOptions);
+
+        var output = tidy_html5(p.html(), tidyOptions);
 
         // replace commonly-used "curly quotes" with their corresponding entities
         //output = output.replace(/\u201C/g, "&ldquo;").replace(/\u201D/g, "&rdquo;").replace(/\u2018/g, "&lsquo;").replace(/\u2019/g, "&rsquo;");
@@ -375,16 +455,18 @@ $(function () {
     });
 
 });
-</script>
+    </script>
 </head>
+
 <body>
-<div id="source" contenteditable="true"></div>
-<div id="target" contenteditable="true"></div>
-<textarea id="output"></textarea>
-<button id="convert">Convert</button>
-<input type="radio" name="preset" value="swift" id="swiftPreset" checked />
-<label for="swiftPreset">Swift Digital</label>
-<input type="radio" name="preset" value="wp" id="wpPreset" />
-<label for="wpPreset">WordPress</label>
+    <div id="source" contenteditable="true"></div>
+    <div id="target" contenteditable="true"></div>
+    <textarea id="output"></textarea>
+    <button id="convert">Convert</button>
+    <input type="radio" name="preset" value="swift" id="swiftPreset" checked />
+    <label for="swiftPreset">Swift Digital</label>
+    <input type="radio" name="preset" value="wp" id="wpPreset" />
+    <label for="wpPreset">WordPress</label>
 </body>
+
 </html>
