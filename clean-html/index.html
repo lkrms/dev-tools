@@ -71,7 +71,6 @@ $(function () {
     $("#convert").click(function () {
 
         var defaultOptions = {
-            "blankTarget": true,
             "deleteEmptyBlocks": true,
             "replaceBlocks": "<div></div>",
             "replaceHeadings": true,
@@ -79,7 +78,6 @@ $(function () {
         };
 
         var wpOptions = {
-            "blankTarget": false,
             "deleteEmptyBlocks": true,
             "replaceBlocks": "<p></p>",
             "replaceHeadings": false,
@@ -143,19 +141,14 @@ $(function () {
         // (<span> will be removed later)
         p.find("*").filter(function () {
 
-            switch (this.style.fontWeight) {
+            if (this.style.fontWeight.match(/^bold/) ||
+                (!isNaN(this.style.fontWeight) && parseInt(this.style.fontWeight) >= 550)) {
 
-                case "bold":
-                case "bolder":
-                case "700":
-                case "800":
-                case "900":
-                    return true;
-
-                default:
-                    return false;
+                return true;
 
             }
+
+            return false;
 
         }).each(function () {
 
@@ -253,19 +246,15 @@ $(function () {
 
         var weightNormalFilter = function () {
 
-            switch (this.style.fontWeight) {
+            if (this.style.fontWeight &&
+                !(this.style.fontWeight.match(/^bold/) ||
+                    (!isNaN(this.style.fontWeight) && parseInt(this.style.fontWeight) >= 550))) {
 
-                case "bold":
-                case "bolder":
-                case "700":
-                case "800":
-                case "900":
-                    return false;
-
-                default:
-                    return true;
+                return true;
 
             }
+
+            return false;
 
         }
 
