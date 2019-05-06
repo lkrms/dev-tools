@@ -47,6 +47,8 @@ if [[ $INSTALL_DEV_TOOLS =~ ^[Yy]$ ]]; then
     . "$(brew --prefix nvm)/nvm.sh" || exit 2
     nvm install 8 || exit 2
 
+    npm install -g eslint
+
 fi
 
 read -p "Install PowerShell? [y/n] " -n 1 -r INSTALL_POWERSHELL

@@ -495,10 +495,7 @@ if [ "$CLI_ONLY" -eq "0" ]; then
 fi
 
 echo -e "Installing npm packages...\n"
-[ "$CLI_ONLY" -eq "0" ] && { sudo npm install -g jslint || exit 1; }
-
-# Sublime Text expects "jsl" to be on the path, so make it so
-[ "$CLI_ONLY" -eq "0" ] && { command -v jsl >/dev/null 2>&1 || sudo ln -s /usr/bin/jslint /usr/local/bin/jsl; }
+[ "$CLI_ONLY" -eq "0" ] && { sudo npm install -g eslint || exit 1; }
 
 echo -e "Updating all npm packages...\n"
 sudo npm update -g || exit 1
