@@ -441,6 +441,25 @@ $(function () {
 
         }
 
+        // e.g. <b><b><b>Text</b></b></b> -> <b>Text</b>
+        do {
+
+            replaced = false;
+
+            p.children().find(":only-child").is("div, p, strong, b, em, i").filter(function () {
+
+                return this.parentElement.nodeName == this.nodeName;
+
+            }).parent().each(function () {
+
+                replaced = true;
+
+                $(this).replaceWith($(this).contents());
+
+            });
+
+        } while (replaced);
+
         // built from https://github.com/lkrms/tidy-html5
         // using https://emscripten.org
         // see http://api.html-tidy.org/tidy/quickref_5.6.0.html
