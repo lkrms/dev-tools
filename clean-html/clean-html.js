@@ -37,7 +37,7 @@ $(function () {
         // Unicode: General Punctuation
         '\u2000-\u206F',
 
-        // Unicode: Supplemental Punctuation 
+        // Unicode: Supplemental Punctuation
         '\u2E00-\u2E7F',
 
         // Basic Latin (incl. space):  !"#$%&'()*+,-./
@@ -64,14 +64,16 @@ $(function () {
             "deleteEmptyBlocks": true,
             "replaceBlocks": "<div></div>",
             "replaceHeadings": true,
-            "spacerBetweenBlocks": true
+            "spacerBetweenBlocks": true,
+            "targetBlank": true
         };
 
         var wpOptions = {
             "deleteEmptyBlocks": true,
             "replaceBlocks": "<p></p>",
             "replaceHeadings": false,
-            "spacerBetweenBlocks": false
+            "spacerBetweenBlocks": false,
+            "targetBlank": false
         };
 
         var options;
@@ -320,18 +322,6 @@ $(function () {
 
         });
 
-        // merge sibling lists
-        p.find("ul, ol").each(function () {
-
-            if (($(this).is("ul") && $(this).prev().is("ul")) || ($(this).is("ol") && $(this).prev().is("ol"))) {
-
-                $(this).prev().append($(this).children());
-                $(this).remove();
-
-            }
-
-        });
-
         // remove unnecessary non-breaking spaces
         p.html(function (i, html) {
 
@@ -387,6 +377,38 @@ $(function () {
 
         }
 
+        var bulletPoints = /^(\u00B7[ ]*)/;
+
+        p.find("*").contents().filter(textNodeFilter).filter(function () {
+
+            // has to be the first child of its parent (i.e. the bullet must be at the start of the block)
+            return !this.previousElementSibling && this.nodeValue.match(bulletPoints);
+
+        }).each(function () {
+
+            this.nodeValue = this.nodeValue.replace(bulletPoints, '');
+
+            var parent = $(this).parent();
+            var ul = $("<ul><li></li></ul>");
+
+            ul.children().first().append(parent.contents());
+
+            parent.replaceWith(ul);
+
+        });
+
+        // merge sibling lists
+        p.find("ul, ol").each(function () {
+
+            if (($(this).is("ul") && $(this).prev().is("ul")) || ($(this).is("ol") && $(this).prev().is("ol"))) {
+
+                $(this).prev().append($(this).children());
+                $(this).remove();
+
+            }
+
+        });
+
         // matched elements (at the top level only) get a spacer inserted after them
         if (options.spacerBetweenBlocks) {
 
@@ -406,19 +428,23 @@ $(function () {
         }
 
         // specify target=_blank for all links (except mailto's)
-        p.find("a").each(function () {
+        if (options.targetBlank) {
 
-            if (!this.href.match(/^mailto:/)) {
+            p.find("a").each(function () {
 
-                $(this).attr("target", "_blank");
+                if (!this.href.match(/^mailto:/)) {
 
-            } else {
+                    $(this).attr("target", "_blank");
 
-                $(this).removeAttr("target");
+                } else {
 
-            }
+                    $(this).removeAttr("target");
 
-        });
+                }
+
+            });
+
+        }
 
         // matched elements are replaced with divs
         if (options.replaceBlocks) {
