@@ -256,8 +256,6 @@ $(function () {
         retainStyle(weightNormalFilter, "strong");
         retainStyle(weightNormalFilter, "b");
 
-        // === text-based transformations go here ===
-
         // convert email addresses to links (if they're not already in links)
         p.find("*").contents().filter(textNodeFilter).filter(function () {
 
@@ -295,7 +293,6 @@ $(function () {
         // clear unwanted attributes
         p.find("[class]").removeAttr("class");
         p.find("[dir]").removeAttr("dir");
-        p.find("[id]").removeAttr("id");
         p.find("[lang]").removeAttr("lang");
         p.find("[style]").removeAttr("style");
         p.find("[tabindex]").removeAttr("tabindex");
@@ -303,9 +300,16 @@ $(function () {
         p.find("a[rel]").removeAttr("rel");
 
         // matched elements are removed from the tree, their children moved up to take their place
-        p.find("font, a, li > p, a u, u u").not("a[href]").each(function () {
+        p.find("font, a, li > p, a u, u u").not("a[href], a[name], a[id]").each(function () {
 
             $(this).replaceWith($(this).contents());
+
+        });
+
+        // copy deprecated names to id attribute
+        p.find("a[name]").not("a[id]").each(function () {
+
+            this.id = this.name;
 
         });
 
