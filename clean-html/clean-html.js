@@ -62,6 +62,7 @@ $(function () {
 
         var defaultOptions = {
             "deleteEmptyBlocks": true,
+            "maxSubheadingLength": 80,
             "replaceBlocks": "<div></div>",
             "replaceHeadings": true,
             "spacerBetweenBlocks": true,
@@ -70,6 +71,7 @@ $(function () {
 
         var wpOptions = {
             "deleteEmptyBlocks": true,
+            "maxSubheadingLength": 80,
             "replaceBlocks": "<p></p>",
             "replaceHeadings": false,
             "spacerBetweenBlocks": false,
@@ -184,7 +186,7 @@ $(function () {
             normal.each(function () {
 
                 // get the topmost element we descend from
-                var el = $(this).parents(elementName).last();
+                var el = $(this).parentsUntil(p, elementName).last();
 
                 // (if we descend from one at all)
                 if (el.length) {
@@ -259,7 +261,7 @@ $(function () {
         // convert email addresses to links (if they're not already in links)
         p.find("*").contents().filter(textNodeFilter).filter(function () {
 
-            return !$(this).parents("a").length;
+            return !$(this).parentsUntil(p, "a").length;
 
         }).each(function () {
 
@@ -329,7 +331,7 @@ $(function () {
         // remove unnecessary non-breaking spaces
         p.html(function (i, html) {
 
-            return html.replace(/&nbsp;/g, " ");
+            return html.replace(/(&nbsp;|&#160;)/g, " ");
 
         });
 
@@ -373,6 +375,12 @@ $(function () {
 
                 var div = $("<div><strong></strong></div>");
 
+                if (this.id) {
+
+                    div[0].id = this.id;
+
+                }
+
                 div.children().first().append($(this).contents());
 
                 $(this).replaceWith(div);
@@ -394,6 +402,12 @@ $(function () {
 
             var parent = $(this).parent();
             var ul = $("<ul><li></li></ul>");
+
+            if (parent[0].id) {
+
+                ul[0].id = parent[0].id;
+
+            }
 
             ul.children().first().append(parent.contents());
 
@@ -420,7 +434,7 @@ $(function () {
 
                 if (!$(this).next().is("ul, ol")
                     //&& ! $(this).prev().is("ul, ol")
-                    && !($(this).children().is("b:only-child, strong:only-child, i:only-child, em:only-child") && $(this).children().text().trim() == $(this).text().trim())
+                    && !($(this).children().is("b:only-child, strong:only-child, i:only-child, em:only-child") && $(this).children().text().trim() == $(this).text().trim() && $(this).text().trim().length <= options.maxSubheadingLength)
                 ) {
 
                     $(this).after($("<div>&nbsp;</div>"))
@@ -455,7 +469,15 @@ $(function () {
 
             p.find("div, p").each(function () {
 
-                $(this).replaceWith($(options.replaceBlocks).append($(this).contents()));
+                var newBlock = $(options.replaceBlocks);
+
+                if (this.id) {
+
+                    newBlock[0].id = this.id;
+
+                }
+
+                $(this).replaceWith(newBlock.append($(this).contents()));
 
             });
 
