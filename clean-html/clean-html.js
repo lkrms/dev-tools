@@ -26,10 +26,9 @@ $(function () {
 
     }
 
-    // NOTE: this doesn't match empty strings
-    var onlyWordSeparators = new RegExp([
+    var wordSeparatorsCharacterClass = [
 
-        '^[',
+        '[',
 
         // whitespace (except \u0020, included below)
         '\f\n\r\t\v\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff',
@@ -52,9 +51,12 @@ $(function () {
         // Basic Latin: {|}~
         '\u007B-\u007E',
 
-        ']+$'
+        ']'
 
-    ].join(''));
+    ].join('');
+
+    // NOTE: this doesn't match empty strings
+    var onlyWordSeparators = new RegExp('^' + wordSeparatorsCharacterClass + '+$');
 
     var whiteColor = $("<div></div>").css("color", "#fff").css("color");
 
@@ -302,7 +304,7 @@ $(function () {
         p.find("a[rel]").removeAttr("rel");
 
         // matched elements are removed from the tree, their children moved up to take their place
-        p.find("font, a, li > p, a u, u u").not("a[href], a[name], a[id]").each(function () {
+        p.find("font, a, li > p, a u, u u").not("a[href], a[name]:empty, a[id]:empty").each(function () {
 
             $(this).replaceWith($(this).contents());
 
@@ -427,24 +429,6 @@ $(function () {
 
         });
 
-        // matched elements (at the top level only) get a spacer inserted after them
-        if (options.spacerBetweenBlocks) {
-
-            p.children("div, p").each(function () {
-
-                if (!$(this).next().is("ul, ol")
-                    //&& ! $(this).prev().is("ul, ol")
-                    && !($(this).children().is("b:only-child, strong:only-child, i:only-child, em:only-child") && $(this).children().text().trim() == $(this).text().trim() && $(this).text().trim().length <= options.maxSubheadingLength)
-                ) {
-
-                    $(this).after($("<div>&nbsp;</div>"))
-
-                }
-
-            });
-
-        }
-
         // specify target=_blank for all links (except mailto's)
         if (options.targetBlank) {
 
@@ -501,6 +485,78 @@ $(function () {
             });
 
         } while (replaced);
+
+        var wastedFormatting = new RegExp("</(b|strong|i|em|u)>(" + wordSeparatorsCharacterClass + "*)<\\1>", "gi");
+
+        p.find("*").filter(function () {
+
+            // check that we're a 'block' with no 'block' children
+            return $(this).css("display") == "block" && !$(this).children().filter(function () {
+
+                return $(this).css("display") == "block";
+
+            }).length;
+
+        }).html(function (i, html) {
+
+            // e.g. "</b> <b>" -> " "
+            return html.replace(wastedFormatting, "$2");
+
+        });
+
+        // tidy up any stray line breaks
+        p.find("*").filter(function () {
+
+            return $(this).css("display") != "inline";
+
+        }).each(function () {
+
+            var $child;
+
+            while (this.firstChild && this.firstChild.nodeType === 1 && ($child = $(this.firstChild)).is("br")) {
+
+                $child.remove();
+
+            }
+
+            while (this.lastChild && this.lastChild.nodeType === 1 && ($child = $(this.lastChild)).is("br")) {
+
+                $child.remove();
+
+            }
+
+        }).find("*").contents().filter(textNodeFilter).each(function () {
+
+            if (!$(this.parentElement).parentsUntil(p).add(this.parentElement).filter(function () {
+                return $(this).data("alreadySplit") === true;
+            }).length) {
+
+                var nn = this.parentElement.nodeName.toLowerCase();
+
+                this.parentElement.outerHTML = this.parentElement.outerHTML.replace(/(<br\s*\/?>\s*){2,}/gi, "</" + nn + "><" + nn + ">");
+
+                $(this.parentElement).data("alreadySplit", true);
+
+            }
+
+        });
+
+        // matched elements (at the top level only) get a spacer inserted after them
+        if (options.spacerBetweenBlocks) {
+
+            p.children("div, p").each(function () {
+
+                if (!$(this).next().is("ul, ol")
+                    && !($(this).children().is("b:only-child, strong:only-child, i:only-child, em:only-child") && $(this).children().text().trim() == $(this).text().trim() && $(this).text().trim().length <= options.maxSubheadingLength)
+                ) {
+
+                    $(this).after($("<div>&nbsp;</div>"))
+
+                }
+
+            });
+
+        }
 
         // built from https://github.com/lkrms/tidy-html5
         // using https://emscripten.org
