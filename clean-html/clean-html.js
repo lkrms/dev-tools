@@ -577,13 +577,7 @@ $(function () {
             "wrap": 0
         };
 
-        // tidy_html5 strips line breaks, which means whitespace can be lost, so enforce whitespace
-        //var output = tidy_html5(p.html().replace(/[\r\n]+/g, " "), tidyOptions);
-
         var output = tidy_html5(p.html(), tidyOptions);
-
-        // replace commonly-used "curly quotes" with their corresponding entities
-        //output = output.replace(/\u201C/g, "&ldquo;").replace(/\u201D/g, "&rdquo;").replace(/\u2018/g, "&lsquo;").replace(/\u2019/g, "&rsquo;");
 
         $("#output").val(output);
 
