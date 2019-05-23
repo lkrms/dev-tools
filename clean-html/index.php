@@ -4,10 +4,10 @@
 <head>
     <title>Clean HTML</title>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="styles.css">
-    <script src="jquery.min.js"></script>
-    <script src="tidy.js"></script>
-    <script src="clean-html.js"></script>
+    <link rel="stylesheet" href="styles.css<?php  echo '?' . filemtime('styles.css'); ?>">
+    <script src="jquery.min.js<?php  echo '?' . filemtime('jquery.min.js'); ?>"></script>
+    <script src="tidy.js<?php  echo '?' . filemtime('tidy.js'); ?>"></script>
+    <script src="clean-html.js<?php  echo '?' . filemtime('clean-html.js'); ?>"></script>
 </head>
 
 <body>

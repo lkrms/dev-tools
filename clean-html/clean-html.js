@@ -119,6 +119,10 @@ $(function () {
 
         } while (replaced);
 
+        // remove annotations that might have been added by Word
+        p.find(".msocomanchor").parent().parent().remove();     // references to footnotes
+        p.find(".msocomtxt").parent().parent().remove();        // entire footnote block
+
         // remove nodes that aren't elements or text (e.g. comments)
         p.contents().filter(nodeFilter).remove();
         p.find("*").contents().filter(nodeFilter).remove();
