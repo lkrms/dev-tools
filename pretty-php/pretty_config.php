@@ -51,4 +51,5 @@
 // if enabled, dumps .err and .out files to the working directory
 @define("PRETTY_DEBUG_MODE", false);
 
-?>
+// de-obfuscate strings containing octal / hex / unicode sequences
+@define("PRETTY_DECODE_STRINGS", true);

@@ -160,7 +160,7 @@ foreach ($lines as $line)
 require_once (dirname(__FILE__) . "/pretty_config.php");
 
 // parse the code into PHP tokens
-$tokens = PurgeTokens(token_get_all($source), $tSkip, false);
+$tokens = PurgeTokens(token_get_all($source, TOKEN_PARSE), $tSkip, false);
 
 // work the magic
 $blocks                            = array();    // filled with CodeBlock objects
@@ -1141,13 +1141,18 @@ $error      = "";
 $errFolder  = dirname(__FILE__) . "/";
 
 // verify that we haven't changed anything irreparably. cos that would be bad.
-$newPurged  = PurgeTokens($newTokens = token_get_all($output), $tNoCompare);
-$oldPurged  = PurgeTokens($oldTokens = token_get_all($source), $tNoCompare);
+if (PRETTY_DECODE_STRINGS)
+{
+    $tNoCompare = array_merge($tNoCompare, [T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE]);
+}
+
+$newPurged  = PurgeTokens($newTokens = token_get_all($output, TOKEN_PARSE), $tNoCompare);
+$oldPurged  = PurgeTokens($oldTokens = token_get_all($source, TOKEN_PARSE), $tNoCompare);
 
 if (PRETTY_DEBUG_MODE)
 {
-    file_put_contents("{$errFolder}prettySrc.tokens.out", print_r(token_get_all($source), true));
-    file_put_contents("{$errFolder}prettyDest.tokens.out", print_r(token_get_all($output), true));
+    file_put_contents("{$errFolder}prettySrc.tokens.out", print_r(token_get_all($source, TOKEN_PARSE), true));
+    file_put_contents("{$errFolder}prettyDest.tokens.out", print_r(token_get_all($output, TOKEN_PARSE), true));
     file_put_contents("{$errFolder}prettySrc.err", CreateSummary($oldPurged));
     file_put_contents("{$errFolder}prettyDest.err", CreateSummary($newPurged));
     file_put_contents("{$errFolder}prettySrcLines.err", CreateSummary(PurgeTokens($oldTokens, $tNoCompare, false), true));

@@ -118,6 +118,31 @@ class CodeBlock
     public function GetCode()
     {
         global $tComments;
+        $string = null;
+
+        switch ($this->Type)
+        {
+            case T_CONSTANT_ENCAPSED_STRING:
+
+                if (PRETTY_DECODE_STRINGS && $this->Code [0] == '"')
+                {
+                    eval ("\$string = {$this->Code};");
+                    $this->Code = '"' . addcslashes($string, "\000..\037\177..\377\\\$\"") . '"';
+                }
+
+                break;
+
+            case T_ENCAPSED_AND_WHITESPACE:
+
+                if (PRETTY_DECODE_STRINGS)
+                {
+                    eval ("\$string = \"{$this->Code}\";");
+                    $this->Code = addcslashes($string, "\000..\037\177..\377\\\$\"");
+                }
+
+                break;
+        }
+
         $prefix  = "";
         $suffix  = "";
 
@@ -251,5 +276,3 @@ function CreateSummary($tokens, $withLines = false)
 }
 
 // PRETTY_NESTED_ARRAYS,0
-
-?>

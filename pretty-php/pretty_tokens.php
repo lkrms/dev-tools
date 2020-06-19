@@ -185,5 +185,3 @@ $tControl       = array_merge($tControlWithParentheses, $tControlNoParentheses, 
 $tAllKeywords   = array_merge($tKeywords, $tControl, $tDeclarations);
 $tAllOperators  = array_merge($tAssignmentOperators, $tArithmeticOperators, $tComparisonOperators, $tLogicalOperators, $tBitwiseOperators, $tSpecialOperators);
 $tNoCompare     = array_merge($tSkip, $tComments);
-
-?>
