@@ -14,7 +14,7 @@ if [ ! -f "$1" ]; then
 
 fi
 
-command -v gs >/dev/null 2>&1 || { echo "Error: Ghostscript not found"; exit 1; }
+command -v gs &>/dev/null || { echo "Error: Ghostscript not found"; exit 1; }
 
 STAT_OPTIONS="-Lc %s"
 

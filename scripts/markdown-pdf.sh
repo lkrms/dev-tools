@@ -14,7 +14,7 @@ if [ ! -f "$1" ]; then
 
 fi
 
-command -v pandoc >/dev/null 2>&1 || { echo "Error: pandoc not found"; exit 1; }
+command -v pandoc &>/dev/null || { echo "Error: pandoc not found"; exit 1; }
 
 OUTPUT_FILE="$2"
 
@@ -58,6 +58,6 @@ pandoc "${PANDOC_OPTIONS[@]}" -o "$OUTPUT_FILE" "$1" || exit 2
 
 echo "Converted $1 to: $OUTPUT_FILE"
 
-command -v xdg-open >/dev/null 2>&1 && { nohup xdg-open "$OUTPUT_FILE" >/dev/null 2>&1 & exit; }
-command -v open >/dev/null 2>&1 && { open "$OUTPUT_FILE"; exit; }
+command -v xdg-open &>/dev/null && { nohup xdg-open "$OUTPUT_FILE" &>/dev/null & exit; }
+command -v open &>/dev/null && { open "$OUTPUT_FILE"; exit; }
 

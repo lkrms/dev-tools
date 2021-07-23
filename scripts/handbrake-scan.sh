@@ -1,6 +1,6 @@
 #!/bin/bash
 
-command -v HandBrakeCLI >/dev/null 2>&1 || { echo "Error: HandBrakeCLI not found."; exit 1; }
+command -v HandBrakeCLI &>/dev/null || { echo "Error: HandBrakeCLI not found."; exit 1; }
 
 function log_something {
 

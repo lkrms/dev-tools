@@ -25,8 +25,8 @@ if [ ! -d "$PHOTOS_ROOT" ]; then
 
 fi
 
-command -v exiftool >/dev/null 2>&1 || { echo "Error: exiftool not found"; exit 1; }
-command -v exiftran >/dev/null 2>&1 || { echo "Error: exiftran not found"; exit 1; }
+command -v exiftool &>/dev/null || { echo "Error: exiftool not found"; exit 1; }
+command -v exiftran &>/dev/null || { echo "Error: exiftran not found"; exit 1; }
 
 function extractPreview {
 
@@ -75,7 +75,7 @@ while read META_TAG PHOTO_FILE; do
 
     (
         extractPreview "$PHOTO_FILE" $META_TAG
-    ) >/dev/null 2>&1 &
+    ) &>/dev/null &
 
     echo "Processing ${PHOTO_FILE}..."
 

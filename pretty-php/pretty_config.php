@@ -48,8 +48,11 @@
 // this is the acceptable disparity between consecutive assignment variable name lengths
 @define("PRETTY_ALIGN_RANGE", 20);
 
-// if enabled, dumps .err and .out files to the working directory
+// if enabled, dumps debug dotfiles to the same directory as pretty.php
 @define("PRETTY_DEBUG_MODE", false);
 
+// convert single-quoted strings to double-quoted strings
+@define("PRETTY_DOUBLE_QUOTE_STRINGS", true);
+
 // de-obfuscate strings containing octal / hex / unicode sequences
-@define("PRETTY_DECODE_STRINGS", true);
+@define("PRETTY_DECODE_STRINGS", false);

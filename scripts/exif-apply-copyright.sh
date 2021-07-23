@@ -25,7 +25,7 @@ if [ ! -d "$PHOTOS_ROOT" ]; then
 
 fi
 
-command -v exiftool >/dev/null 2>&1 || { echo "Error: exiftool not found"; exit 1; }
+command -v exiftool &>/dev/null || { echo "Error: exiftool not found"; exit 1; }
 
 TEMP_FILE="$(mktemp "/tmp/$(basename "$0").XXXXXXX")"
 

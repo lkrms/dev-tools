@@ -21,8 +21,8 @@ if [ ! -f "$1" ]; then
 
 fi
 
-command -v GetFileInfo >/dev/null 2>&1 || { echo "GetFileInfo not found."; exit 2; }
-command -v SetFile >/dev/null 2>&1 || { echo "SetFile not found."; exit 2; }
+command -v GetFileInfo &>/dev/null || { echo "GetFileInfo not found."; exit 2; }
+command -v SetFile &>/dev/null || { echo "SetFile not found."; exit 2; }
 
 if [ "$(GetFileInfo -ae "$1")" -eq "1" ]; then
 

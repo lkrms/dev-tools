@@ -28,7 +28,7 @@ if [ ! -d "$PHOTOS_DIR" ]; then
 
 fi
 
-command -v exiftool >/dev/null 2>&1 || { echo "Error: exiftool not found"; exit 1; }
+command -v exiftool &>/dev/null || { echo "Error: exiftool not found"; exit 1; }
 
 DATE_COMMAND=date
 

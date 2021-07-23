@@ -2,7 +2,7 @@
 
 /**
  * PrettyPhp: Just another PHP beautifier.
- * Copyright (c) 2012-2017 Luke Arms
+ * Copyright (c) 2012-2021 Luke Arms
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,9 @@
 // load libraries and data
 require_once (dirname(__FILE__) . "/pretty_functions.php");
 require_once (dirname(__FILE__) . "/pretty_tokens.php");
+
+//
+$errFolder = dirname(__FILE__) . "/";
 
 // will be true if we're running on the command line
 $onCli = false;
@@ -116,8 +119,8 @@ foreach ($lines as $line)
 
     if (substr($line, 0, 10) == "// PRETTY_" && strpos($line, ",") !== false)
     {
-        $line                = substr($line, 3);
-        list ($const, $val)  = explode(",", $line, 2);
+        $line               = substr($line, 3);
+        list ($const, $val) = explode(",", $line, 2);
 
         switch ($const)
         {
@@ -135,6 +138,8 @@ foreach ($lines as $line)
             case "PRETTY_SPACE_BEFORE_COLON":
             case "PRETTY_ALIGN":
             case "PRETTY_DEBUG_MODE":
+            case "PRETTY_DOUBLE_QUOTE_STRINGS":
+            case "PRETTY_DECODE_STRINGS":
 
                 @define($const, (bool)$val);
 
@@ -162,51 +167,59 @@ require_once (dirname(__FILE__) . "/pretty_config.php");
 // parse the code into PHP tokens
 $tokens = PurgeTokens(token_get_all($source, TOKEN_PARSE), $tSkip, false);
 
+if (PRETTY_DEBUG_MODE)
+{
+    file_put_contents("{$errFolder}.source.tokens.out", print_r(AnnotateTokens($tokens), true));
+}
+
 // work the magic
-$blocks                            = array();    // filled with CodeBlock objects
-$indent                            = 0;    // current level of indentation
-$arrayCount                        = 0;
-$arrayParenthesesCount             = array();
-$arrayStarted                      = -2;
-$arrayStartIndent                  = 0;
-$forSemicolons                     = 0;
-$switchIndents                     = array();
-$doIndents                         = array();
-$altIndents                        = array();
-$curlyOpenCount                    = 0;
-$declareActive                     = false;
-$blankAfterSemicolon               = false;
-$blankAfterSemicolonParentheses    = 0;
-$blankAfterSemicolonNoParentheses  = false;
-$indentAfterParentheses            = false;
-$indentOptionalParentheses         = false;
-$indentWithoutParentheses          = false;
-$indentParenthesesCount            = 0;
-$tempIndents                       = array();
-$lastTempIndentEnded               = -2;
-$lastTempIndents                   = array();
-$pendingIndent                     = 0;    // allows indentation changes to be passed to next block
-$pendingLineBefore                 = false;
-$assignments                       = array();
-$noCommentPin                      = array("}", T_CLOSE_TAG);
-$indentWithoutTerminators          = array(";", "{");
-$indentOptionalTerminators         = array(";", "{", "(");
-$compactTags                       = false;
-$pendingEndCompactTags             = false;
+$blocks                           = array();    // filled with CodeBlock objects
+$indent                           = 0;    // current level of indentation
+$arrayCount                       = 0;
+$arrayParenthesesCount            = array();
+$arrayStarted                     = -2;
+$arrayStartIndent                 = 0;
+$forSemicolons                    = 0;
+$switchIndents                    = array();
+$doIndents                        = array();
+$altIndents                       = array();
+$curlyOpenCount                   = 0;
+$declareActive                    = false;
+$blankAfterSemicolon              = false;
+$blankAfterSemicolonParentheses   = 0;
+$blankAfterSemicolonNoParentheses = false;
+$indentAfterParentheses           = false;
+$indentOptionalParentheses        = false;
+$indentWithoutParentheses         = false;
+$indentParenthesesCount           = 0;
+$tempIndents                      = array();
+$lastTempIndentEnded              = -2;
+$lastTempIndents                  = array();
+$pendingIndent                    = 0;    // allows indentation changes to be passed to next block
+$pendingLineBefore                = false;
+$assignments                      = array();
+$noCommentPin                     = array("}", T_CLOSE_TAG);
+$indentWithoutTerminators         = array(";", "{");
+$indentOptionalTerminators        = array(";", "{", "(");
+$compactTags                      = false;
+$pendingEndCompactTags            = false;
+$ternaryDepth                     = 0;
+$lastCollapsibleType              = null;
+$lastCollapsibleLine              = 0;
 
 // if present before "=" on any given line, no assignment alignment will occur
 $noAssignment = array_merge($tAssignmentOperators, $tControl, $tDeclarations);
 
 for ($i = 0; $i < count($tokens); $i++)
 {
-    $token  = $tokens[$i];
-    $type   = $token[0];
-    $code   = $token[1];
-    $line   = $token[2];
+    $token = $tokens[$i];
+    $type  = $token[0];
+    $code  = $token[1];
+    $line  = $token[2];
 
     // process pending indentation changes
-    $indent        += $pendingIndent;
-    $pendingIndent  = 0;
+    $indent       += $pendingIndent;
+    $pendingIndent = 0;
 
     // trim almost everything
     if (in_array($type, $tTrimLeft))
@@ -223,18 +236,18 @@ for ($i = 0; $i < count($tokens); $i++)
     }
 
     // create a CodeBlock instance for this token
-    $block       = new CodeBlock($type, $code, $line, $indent, $i ? $blocks[$i - 1] : null);
-    $blocks[$i]  = $block;
+    $block      = new CodeBlock($type, $code, $line, $indent, $inHeredoc ?? false, $i ? $blocks[$i - 1] : null);
+    $blocks[$i] = $block;
 
     if ($block->PreviousBlock)
     {
         $block->PreviousBlock->NextBlock = $block;
     }
 
-    $block->DeIndent                    = ($arrayCount && ! PRETTY_INDENT_NESTED_ARRAYS) ? $arrayStartIndent : 0;
-    $block->LineBefore                  = $pendingLineBefore;
-    $pendingLineBefore                  = false;
-    $oldBlankAfterSemicolonParentheses  = $blankAfterSemicolonParentheses;
+    $block->DeIndent                   = ($arrayCount && ! PRETTY_INDENT_NESTED_ARRAYS) ? $arrayStartIndent : 0;
+    $block->LineBefore                 = $pendingLineBefore;
+    $pendingLineBefore                 = false;
+    $oldBlankAfterSemicolonParentheses = $blankAfterSemicolonParentheses;
 
     if ($blankAfterSemicolon && ! $blankAfterSemicolonNoParentheses && $type == "(")
     {
@@ -254,8 +267,8 @@ for ($i = 0; $i < count($tokens); $i++)
 
     if ( ! $blankAfterSemicolon)
     {
-        $blankAfterSemicolonParentheses    = 0;
-        $blankAfterSemicolonNoParentheses  = false;
+        $blankAfterSemicolonParentheses   = 0;
+        $blankAfterSemicolonNoParentheses = false;
     }
 
     $colonProcessed = false;
@@ -264,7 +277,8 @@ for ($i = 0; $i < count($tokens); $i++)
     if ($i >= 1 && $blocks[$i - 1]->Type == T_ARRAY && $type != "(")
     {
         // reverse everything done to open the array that isn't actually an array
-        $blocks[$i - 1]->SpaceAfter = true;
+        $blocks[$i - 1]->SpaceBefore = false;
+        $blocks[$i - 1]->SpaceAfter  = true;
 
         if (PRETTY_NESTED_ARRAYS)
         {
@@ -282,9 +296,9 @@ for ($i = 0; $i < count($tokens); $i++)
         // allow for "if ($something): doSomething(); endif;" syntax
         if ($type == ":")
         {
-            $block->SpaceBefore  = PRETTY_SPACE_BEFORE_COLON;
-            $block->LineAfter    = ! $compactTags;
-            $block->SpaceAfter   = $compactTags;
+            $block->SpaceBefore = PRETTY_SPACE_BEFORE_COLON;
+            $block->LineAfter   = ! $compactTags;
+            $block->SpaceAfter  = $compactTags;
             array_push($altIndents, $indent);
             $colonProcessed = true;
         }
@@ -294,24 +308,24 @@ for ($i = 0; $i < count($tokens); $i++)
             array_push($tempIndents, $indent);
         }
 
-        $indentWithoutParentheses   = false;
-        $indentOptionalParentheses  = false;
+        $indentWithoutParentheses  = false;
+        $indentOptionalParentheses = false;
     }
 
     // keep single-line PHP blocks compact, e.g. in templates
     if ($i >= 1 && in_array($blocks[$i - 1]->Type, array(T_OPEN_TAG, T_OPEN_TAG_WITH_ECHO)) && $block->Line == $blocks[$i - 1]->Line)
     {
-        $blocks[$i - 1]->BlankLineAfter  = false;
-        $blocks[$i - 1]->LineAfter       = false;
-        $blocks[$i - 1]->SpaceAfter      = true;
-        $compactTags                     = true;
-        $pendingEndCompactTags           = false;
+        $blocks[$i - 1]->BlankLineAfter = false;
+        $blocks[$i - 1]->LineAfter      = false;
+        $blocks[$i - 1]->SpaceAfter     = true;
+        $compactTags                    = true;
+        $pendingEndCompactTags          = false;
     }
 
     if ($pendingEndCompactTags && $type != T_CLOSE_TAG)
     {
-        $compactTags            = false;
-        $pendingEndCompactTags  = false;
+        $compactTags           = false;
+        $pendingEndCompactTags = false;
     }
 
     switch ($type)
@@ -339,15 +353,15 @@ for ($i = 0; $i < count($tokens); $i++)
 
             if ($compactTags)
             {
-                $blocks[$i - 1]->BlankLineAfter  = false;
-                $blocks[$i - 1]->LineAfter       = false;
-                $blocks[$i - 1]->SpaceAfter      = true;
-                $compactTags                     = false;
+                $blocks[$i - 1]->BlankLineAfter = false;
+                $blocks[$i - 1]->LineAfter      = false;
+                $blocks[$i - 1]->SpaceAfter     = true;
+                $compactTags                    = false;
             }
             else
             {
-                $block->BlankLineBefore  = true;
-                $block->DeIndent         = $block->Indent;
+                $block->BlankLineBefore = true;
+                $block->DeIndent        = $block->Indent;
             }
 
             break;
@@ -357,16 +371,16 @@ for ($i = 0; $i < count($tokens); $i++)
             // if anyone can find a way to legally add more than two semicolons inside a "for" iterator, I'm all ears
             if ($forSemicolons)
             {
-                $block->SpaceAfter   = true;
-                $block->SpaceBefore  = PRETTY_SPACE_BEFORE_FOR_SEMICOLON;
+                $block->SpaceAfter  = true;
+                $block->SpaceBefore = PRETTY_SPACE_BEFORE_FOR_SEMICOLON;
                 $forSemicolons--;
 
                 break;
             }
 
-            $block->LineAfter       = true;
-            $lastTempIndents        = $tempIndents;
-            $pendingEndCompactTags  = true;
+            $block->LineAfter      = true;
+            $lastTempIndents       = $tempIndents;
+            $pendingEndCompactTags = true;
 
             while ($tempIndents)
             {
@@ -398,10 +412,10 @@ for ($i = 0; $i < count($tokens); $i++)
 
             if ($blankAfterSemicolon)
             {
-                $block->BlankLineAfter             = true;
-                $blankAfterSemicolon               = false;
-                $blankAfterSemicolonParentheses    = 0;
-                $blankAfterSemicolonNoParentheses  = false;
+                $block->BlankLineAfter            = true;
+                $blankAfterSemicolon              = false;
+                $blankAfterSemicolonParentheses   = 0;
+                $blankAfterSemicolonNoParentheses = false;
             }
 
             break;
@@ -413,16 +427,37 @@ for ($i = 0; $i < count($tokens); $i++)
                 break;
             }
 
-            // switch related?
             if (($i >= 2 && $blocks[$i - 2]->Type == T_CASE) || ($i >= 1 && $blocks[$i - 1]->Type == T_DEFAULT) || ($i >= 4 && $blocks[$i - 4]->Type == T_CASE && $blocks[$i - 2]->Type == T_DOUBLE_COLON))
             {
-                $block->BlankLineAfter  = ! $compactTags;
-                $block->SpaceAfter      = $compactTags;
+                // switch-related
+                $block->BlankLineAfter = ! $compactTags;
+                $block->SpaceAfter     = $compactTags;
+            }
+            elseif ($ternaryDepth)
+            {
+                $ternaryDepth--;
+
+                // ternary operator without middle part
+                if ($i >= 1 && $blocks[$i - 1]->Type == "?")
+                {
+                    $blocks[$i - 1]->SpaceAfter = false;
+                }
+                else
+                {
+                    $block->SpaceBefore = true;
+                }
+
+                $block->SpaceAfter = true;
+            }
+            elseif ($i >= 1 && $blocks[$i - 1]->Type == ")")
+            {
+                // function return type
+                $block->SpaceAfter = true;
             }
             else
             {
-                $block->SpaceBefore  = true;
-                $block->SpaceAfter   = true;
+                $block->SpaceBefore = true;
+                $block->SpaceAfter  = true;
             }
 
             break;
@@ -448,18 +483,18 @@ for ($i = 0; $i < count($tokens); $i++)
 
             if ( ! PRETTY_LINE_BEFORE_BRACE)
             {
-                $block->SpaceBefore     = true;
-                $block->BlankLineAfter  = ! $compactTags;
-                $block->SpaceAfter      = $compactTags;
+                $block->SpaceBefore    = true;
+                $block->BlankLineAfter = ! $compactTags;
+                $block->SpaceAfter     = $compactTags;
                 $block->Indent++;
                 $indent++;
             }
             else
             {
-                $block->LineBefore   = ! $compactTags;
-                $block->SpaceBefore  = $compactTags;
-                $pendingLineBefore   = ! $compactTags;
-                $block->SpaceAfter   = $compactTags;
+                $block->LineBefore  = ! $compactTags;
+                $block->SpaceBefore = $compactTags;
+                $pendingLineBefore  = ! $compactTags;
+                $block->SpaceAfter  = $compactTags;
                 $pendingIndent++;
                 unset($s);
 
@@ -503,19 +538,19 @@ for ($i = 0; $i < count($tokens); $i++)
 
             $block->Indent--;
             $indent--;
-            $lastTempIndents        = $tempIndents;
-            $pendingEndCompactTags  = true;
+            $lastTempIndents       = $tempIndents;
+            $pendingEndCompactTags = true;
 
             while ($tempIndents)
             {
                 if (($t = array_pop($tempIndents)) == $indent + $pendingIndent)
                 {
-                    $block->BlankLineBefore  = false;
-                    $block->BlankLineAfter   = false;
-                    $block->LineBefore       = true;
-                    $pendingLineBefore       = true;
-                    $pendingIndent          -= 1;
-                    $lastTempIndentEnded     = $i;
+                    $block->BlankLineBefore = false;
+                    $block->BlankLineAfter  = false;
+                    $block->LineBefore      = true;
+                    $pendingLineBefore      = true;
+                    $pendingIndent         -= 1;
+                    $lastTempIndentEnded    = $i;
                 }
                 else
                 {
@@ -570,8 +605,8 @@ for ($i = 0; $i < count($tokens); $i++)
             {
                 if ($arrayStarted == $i - 1)
                 {
-                    $block->LineAfter  = ! $compactTags;
-                    $block->DeIndent   = ! PRETTY_INDENT_NESTED_ARRAYS ? $arrayStartIndent : 0;
+                    $block->LineAfter = ! $compactTags;
+                    $block->DeIndent  = ! PRETTY_INDENT_NESTED_ARRAYS ? $arrayStartIndent : 0;
                     $block->Indent++;
                     $indent++;
                 }
@@ -582,9 +617,9 @@ for ($i = 0; $i < count($tokens); $i++)
             }
             elseif ($indentOptionalParentheses)
             {
-                $indentAfterParentheses     = true;
-                $indentOptionalParentheses  = false;
-                $indentParenthesesCount     = 1;
+                $indentAfterParentheses    = true;
+                $indentOptionalParentheses = false;
+                $indentParenthesesCount    = 1;
             }
             elseif ($indentAfterParentheses)
             {
@@ -632,8 +667,8 @@ for ($i = 0; $i < count($tokens); $i++)
             {
                 if ( ! --$indentParenthesesCount)
                 {
-                    $indentAfterParentheses    = false;
-                    $indentWithoutParentheses  = true;
+                    $indentAfterParentheses   = false;
+                    $indentWithoutParentheses = true;
                 }
             }
 
@@ -647,15 +682,15 @@ for ($i = 0; $i < count($tokens); $i++)
             // empty arrays, calls, etc. should appear as "()"
             if ($i >= 1 && $blocks[$i - 1]->Type == "(")
             {
-                $block->LineBefore           = false;
-                $block->SpaceBefore          = false;
-                $blocks[$i - 1]->LineAfter   = false;
-                $blocks[$i - 1]->SpaceAfter  = false;
+                $block->LineBefore          = false;
+                $block->SpaceBefore         = false;
+                $blocks[$i - 1]->LineAfter  = false;
+                $blocks[$i - 1]->SpaceAfter = false;
             }
             elseif ($requestBlank)
             {
-                $blankAfterSemicolon               = true;
-                $blankAfterSemicolonNoParentheses  = true;
+                $blankAfterSemicolon              = true;
+                $blankAfterSemicolonNoParentheses = true;
             }
 
             break;
@@ -668,7 +703,7 @@ for ($i = 0; $i < count($tokens); $i++)
             }
 
             // could be a PHP 5.4 array
-            if ($i >= 1 && ! in_array($blocks[$i - 1]->Type, array(T_VARIABLE, ")", "]")))
+            if ( ! (($i >= 1 && in_array($blocks[$i - 1]->Type, array(T_VARIABLE, ")", "]"))) || ($i >= 2 && $blocks[$i - 1]->Type == T_STRING && $blocks[$i - 2]->Type == T_OBJECT_OPERATOR)))
             {
                 $block->SpaceBefore = true;
 
@@ -681,8 +716,8 @@ for ($i = 0; $i < count($tokens); $i++)
                     }
 
                     array_push($arrayParenthesesCount, 0);
-                    $block->LineAfter  = ! $compactTags;
-                    $block->DeIndent   = ! PRETTY_INDENT_NESTED_ARRAYS ? $arrayStartIndent : 0;
+                    $block->LineAfter = ! $compactTags;
+                    $block->DeIndent  = ! PRETTY_INDENT_NESTED_ARRAYS ? $arrayStartIndent : 0;
                     $block->Indent++;
                     $indent++;
                 }
@@ -744,15 +779,15 @@ for ($i = 0; $i < count($tokens); $i++)
             // ensure empty brackets appear as "[]"
             if ($i >= 1 && $blocks[$i - 1]->Type == "[")
             {
-                $block->SpaceBefore          = false;
-                $block->LineBefore           = false;
-                $blocks[$i - 1]->SpaceAfter  = false;
-                $blocks[$i - 1]->LineAfter   = false;
+                $block->SpaceBefore         = false;
+                $block->LineBefore          = false;
+                $blocks[$i - 1]->SpaceAfter = false;
+                $blocks[$i - 1]->LineAfter  = false;
             }
             elseif ($requestBlank)
             {
-                $blankAfterSemicolon               = true;
-                $blankAfterSemicolonNoParentheses  = true;
+                $blankAfterSemicolon              = true;
+                $blankAfterSemicolonNoParentheses = true;
             }
 
             break;
@@ -783,9 +818,9 @@ for ($i = 0; $i < count($tokens); $i++)
 
         case T_SWITCH:
 
-            $block->BlankLineBefore  = ! $compactTags;
-            $block->SpaceBefore      = $compactTags;
-            $block->SpaceAfter       = true;
+            $block->BlankLineBefore = ! $compactTags;
+            $block->SpaceBefore     = $compactTags;
+            $block->SpaceAfter      = true;
 
             // this is how we handle the weirdness of switch structures
             array_push($switchIndents, ++$indent);
@@ -795,17 +830,17 @@ for ($i = 0; $i < count($tokens); $i++)
         case T_CASE:
         case T_DEFAULT:
 
-            $block->BlankLineBefore  = ! $compactTags;
-            $block->SpaceBefore      = $compactTags;
-            $block->SpaceAfter       = $type == T_CASE;
+            $block->BlankLineBefore = ! $compactTags;
+            $block->SpaceBefore     = $compactTags;
+            $block->SpaceAfter      = $type == T_CASE;
             $block->Indent--;
 
             // collapse empty lines between contiguous case/default statements
             if (($i >= 2 && $blocks[$i - 2]->Type == T_DEFAULT) || ($i >= 3 && $blocks[$i - 3]->Type == T_CASE) || ($i >= 5 && $blocks[$i - 5]->Type == T_CASE && $blocks[$i - 3]->Type == T_DOUBLE_COLON))
             {
-                $block->LineBefore               = $block->BlankLineBefore;
-                $block->BlankLineBefore          = false;
-                $blocks[$i - 1]->BlankLineAfter  = false;
+                $block->LineBefore              = $block->BlankLineBefore;
+                $block->BlankLineBefore         = false;
+                $blocks[$i - 1]->BlankLineAfter = false;
             }
 
             break;
@@ -815,32 +850,34 @@ for ($i = 0; $i < count($tokens); $i++)
 
             if ($i >= 1 && ! is_null($blocks[$i - 1]->Line) && $blocks[$i - 1]->Line == $block->Line)
             {
-                $block->TabBefore                = true;
-                $block->BlankLineAfter           = $blocks[$i - 1]->BlankLineAfter;
-                $block->LineAfter                = $blocks[$i - 1]->LineAfter;
-                $blocks[$i - 1]->BlankLineAfter  = false;
-                $blocks[$i - 1]->LineAfter       = false;
+                $block->TabBefore               = true;
+                $block->BlankLineAfter          = $blocks[$i - 1]->BlankLineAfter;
+                $block->LineAfter               = $blocks[$i - 1]->LineAfter;
+                $blocks[$i - 1]->BlankLineAfter = false;
+                $blocks[$i - 1]->LineAfter      = false;
             }
             else
             {
                 $block->BlankLineBefore = true;
             }
 
-            $block->LineAfter       = true;
-            $pendingEndCompactTags  = true;
+            $block->LineAfter      = true;
+            $pendingEndCompactTags = true;
 
             break;
 
         case T_START_HEREDOC:
 
-            $block->LineAfter       = true;
-            $pendingEndCompactTags  = true;
+            $block->LineAfter      = true;
+            $pendingEndCompactTags = true;
+            $inHeredoc             = true;
 
             break;
 
         case T_END_HEREDOC:
 
-            $block->LineBefore = true;
+            $block->InHeredoc = false;
+            $inHeredoc        = false;
 
             break;
 
@@ -852,8 +889,8 @@ for ($i = 0; $i < count($tokens); $i++)
 
         case T_HALT_COMPILER:
 
-            $block->BlankLineBefore  = true;
-            $pendingEndCompactTags   = true;
+            $block->BlankLineBefore = true;
+            $pendingEndCompactTags  = true;
 
             break;
 
@@ -868,8 +905,8 @@ for ($i = 0; $i < count($tokens); $i++)
 
             if (in_array($type, $tControl) && ! in_array($type, $tControlOptions))
             {
-                $block->BlankLineBefore  = ! $compactTags;
-                $block->SpaceBefore      = $compactTags;
+                $block->BlankLineBefore = ! $compactTags;
+                $block->SpaceBefore     = $compactTags;
 
                 if ($type == T_DO)
                 {
@@ -881,13 +918,13 @@ for ($i = 0; $i < count($tokens); $i++)
 
                     if ($doIndents && ($d = array_pop($doIndents)) == $indent)
                     {
-                        $block->BlankLineBefore  = false;
-                        $block->SpaceBefore      = true;
+                        $block->BlankLineBefore = false;
+                        $block->SpaceBefore     = true;
 
                         if ($blocks[$i - 1]->Type == "}")
                         {
-                            $blocks[$i - 1]->BlankLineAfter  = false;
-                            $blocks[$i - 1]->LineAfter       = PRETTY_LINE_BEFORE_BRACE;
+                            $blocks[$i - 1]->BlankLineAfter = false;
+                            $blocks[$i - 1]->LineAfter      = PRETTY_LINE_BEFORE_BRACE;
                         }
 
                         $blankAfterSemicolon = true;
@@ -917,19 +954,42 @@ for ($i = 0; $i < count($tokens); $i++)
                 $indentAfterParentheses = true;
             }
 
-            if (in_array($type, $tDeclarations) && ! ($i >= 1 && in_array($blocks[$i - 1]->Type, $tDeclarations)) && ! ($i >= 2 && in_array($blocks[$i - 2]->Type, $tDeclarations) && $blocks[$i - 1]->Type == T_STRING))
+            if (in_array($type, $tDeclarations) && ! ($i >= 1 && in_array($blocks[$i - 1]->Type, $tDeclarations)) && ! ($i >= 2 && in_array($blocks[$i - 2]->Type, $tDeclarations) && $blocks[$i - 1]->Type == T_STRING) && ! ($type == T_USE && $i >= 1 && $blocks[$i - 1]->Type == ")"))
             {
                 $block->BlankLineBefore = true;
             }
 
             if (in_array($type, $tAllKeywords) || in_array($type, $tAllOperators))
             {
-                $block->SpaceBefore = true;
+                if ( ! ($type == T_NEW && $i >= 1 && $blocks[$i - 1]->Type == "("))
+                {
+                    $block->SpaceBefore = true;
+                }
 
                 // e.g. $i = -1;
                 if ( ! ($i >= 1 && in_array($type, $tArithmeticOperators) && in_array($blocks[$i - 1]->Type, $tAllOperators)))
                 {
                     $block->SpaceAfter = true;
+                }
+
+                // references
+                if ($type == "&" && $i >= 1 && in_array($blocks[$i - 1]->Type, ["(", ","]))
+                {
+                    $block->SpaceBefore = false;
+                    $block->SpaceAfter  = false;
+                }
+
+                if ($type == "?")
+                {
+                    if ($i >= 1 && in_array($blocks[$i - 1]->Type, ["(", ",", ":"]))
+                    {
+                        $block->SpaceBefore = false;
+                        $block->SpaceAfter  = false;
+                    }
+                    else
+                    {
+                        $ternaryDepth++;
+                    }
                 }
             }
 
@@ -940,8 +1000,8 @@ for ($i = 0; $i < count($tokens); $i++)
 
                 if ($i >= 1 && $blocks[$i - 1]->Type == "}")
                 {
-                    $blocks[$i - 1]->BlankLineAfter  = false;
-                    $blocks[$i - 1]->LineAfter       = PRETTY_LINE_BEFORE_BRACE;
+                    $blocks[$i - 1]->BlankLineAfter = false;
+                    $blocks[$i - 1]->LineAfter      = PRETTY_LINE_BEFORE_BRACE;
                 }
 
                 // e.g. in the absence of braces, an "else" after a nested "if" should relate to the nested "if", not an outer one;
@@ -955,8 +1015,8 @@ for ($i = 0; $i < count($tokens); $i++)
                     }
                     else
                     {
-                        $indent             = $block->Indent = $blocks[$i - 1]->Indent;
-                        $block->LineBefore  = false;
+                        $indent            = $block->Indent = $blocks[$i - 1]->Indent;
+                        $block->LineBefore = false;
                     }
 
                     $tempIndents = $lastTempIndents;
@@ -969,9 +1029,9 @@ for ($i = 0; $i < count($tokens); $i++)
 
                 if ($altIndents && ($a = array_pop($altIndents)) == $indent)
                 {
-                    $block->LineBefore               = ! $compactTags;
-                    $block->SpaceBefore              = $compactTags;
-                    $blocks[$i - 1]->BlankLineAfter  = false;
+                    $block->LineBefore              = ! $compactTags;
+                    $block->SpaceBefore             = $compactTags;
+                    $blocks[$i - 1]->BlankLineAfter = false;
                     $block->Indent--;
                     $indent--;
 
@@ -1007,8 +1067,8 @@ for ($i = 0; $i < count($tokens); $i++)
                 $block->BlankLineBefore = false;
             }
 
-            $blocks[$j]->Indent    = $block->Indent;
-            $blocks[$j]->DeIndent  = $block->DeIndent;
+            $blocks[$j]->Indent   = $block->Indent;
+            $blocks[$j]->DeIndent = $block->DeIndent;
             $j--;
         }
     }
@@ -1020,14 +1080,14 @@ for ($i = 0; $i < count($tokens); $i++)
     {
         if ($block->BlankLineBefore)
         {
-            $block->BlankLineBefore  = false;
-            $block->LineBefore       = true;
+            $block->BlankLineBefore = false;
+            $block->LineBefore      = true;
         }
 
         if ($block->BlankLineAfter)
         {
-            $block->BlankLineAfter  = false;
-            $block->LineAfter       = true;
+            $block->BlankLineAfter = false;
+            $block->LineAfter      = true;
         }
     }
 }
@@ -1046,29 +1106,40 @@ $output = "";
 for ($i = 0; $i < count($blocks); $i++)
 {
     $block = $blocks[$i];
+    $line  = substr_count($output, PRETTY_EOL) + 1;
+    $col   = strrpos($output, PRETTY_EOL);
+
+    if ($col === false)
+    {
+        $col = strlen($output);
+    }
+    else
+    {
+        $col = strlen($output) - $col - strlen(PRETTY_EOL);
+    }
+
+    $block->OutLine = $line;
+    $block->OutCol  = $col;
+
+    if (in_array($block->Type, $tCollapsibleDeclarations))
+    {
+        if ($lastCollapsibleType == $block->Type && $line - $lastCollapsibleLine < 3)
+        {
+            $block->BlankLineBefore = false;
+            $block->LineBefore      = true;
+        }
+
+        $lastCollapsibleType = $block->Type;
+        $lastCollapsibleLine = $line;
+    }
 
     if (PRETTY_ALIGN)
     {
-        $line  = substr_count($output, PRETTY_EOL) + 1;
-        $col   = strrpos($output, PRETTY_EOL);
-
-        if ($col === false)
-        {
-            $col = strlen($output);
-        }
-        else
-        {
-            $col = strlen($output) - $col - strlen(PRETTY_EOL);
-        }
-
-        $block->OutLine  = $line;
-        $block->OutCol   = $col;
-        $indent          = $block->Indent - $block->DeIndent;
-
         if ($block->Type == T_DOUBLE_ARROW || in_array($block->Type, $tAssignmentOperators))
         {
-            $j         = $i - 1;
-            $isAssign  = true;
+            $indent   = $block->Indent - $block->DeIndent;
+            $j        = $i - 1;
+            $isAssign = true;
 
             while ($j >= 0 && $blocks[$j]->OutLine == $line)
             {
@@ -1097,9 +1168,9 @@ for ($i = 0; $i < count($blocks); $i++)
 if (PRETTY_ALIGN)
 {
     // this forces the last assignment block to resolve
-    $assignments[]  = array($line + 2);
-    $startLine      = null;
-    $maxCol         = 0;
+    $assignments[] = array($line + 2);
+    $startLine     = null;
+    $maxCol        = 0;
 
     for ($j = 0; $j < count($assignments); $j++)
     {
@@ -1107,11 +1178,12 @@ if (PRETTY_ALIGN)
         {
             if (is_null($startLine))
             {
-                $startLine  = $j - 1;
-                $maxCol     = $assignments[$j - 1][1];
+                $startLine = $j - 1;
+                $maxCol    = $assignments[$j - 1][1] + strlen($blocks[$assignments[$j - 1][2]]->Code);
             }
 
-            $maxCol = $maxCol < $assignments[$j][1] ? $assignments[$j][1] : $maxCol;
+            $col    = $assignments[$j][1] + strlen($blocks[$assignments[$j][2]]->Code);
+            $maxCol = $maxCol < $col ? $col : $maxCol;
         }
         else
         {
@@ -1119,8 +1191,8 @@ if (PRETTY_ALIGN)
             {
                 for ($k = $startLine; $k <= $endLine; $k++)
                 {
-                    $block         = $blocks[$assignments[$k][2]];
-                    $block->PadTo  = $maxCol - $block->OutCol + 2;
+                    $block        = $blocks[$assignments[$k][2]];
+                    $block->PadTo = $maxCol - $block->OutCol;
                 }
             }
 
@@ -1137,27 +1209,21 @@ if (PRETTY_ALIGN)
     }
 }
 
-$error      = "";
-$errFolder  = dirname(__FILE__) . "/";
+if (PRETTY_DEBUG_MODE)
+{
+    file_put_contents("{$errFolder}.output.formatted.php", $output);
+}
+
+$error = "";
 
 // verify that we haven't changed anything irreparably. cos that would be bad.
-if (PRETTY_DECODE_STRINGS)
+if (PRETTY_DECODE_STRINGS || PRETTY_DOUBLE_QUOTE_STRINGS)
 {
     $tNoCompare = array_merge($tNoCompare, [T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE]);
 }
 
-$newPurged  = PurgeTokens($newTokens = token_get_all($output, TOKEN_PARSE), $tNoCompare);
-$oldPurged  = PurgeTokens($oldTokens = token_get_all($source, TOKEN_PARSE), $tNoCompare);
-
-if (PRETTY_DEBUG_MODE)
-{
-    file_put_contents("{$errFolder}prettySrc.tokens.out", print_r(token_get_all($source, TOKEN_PARSE), true));
-    file_put_contents("{$errFolder}prettyDest.tokens.out", print_r(token_get_all($output, TOKEN_PARSE), true));
-    file_put_contents("{$errFolder}prettySrc.err", CreateSummary($oldPurged));
-    file_put_contents("{$errFolder}prettyDest.err", CreateSummary($newPurged));
-    file_put_contents("{$errFolder}prettySrcLines.err", CreateSummary(PurgeTokens($oldTokens, $tNoCompare, false), true));
-    file_put_contents("{$errFolder}prettyOutput.err", $output);
-}
+$newPurged = PurgeTokens(token_get_all($output, TOKEN_PARSE), $tNoCompare);
+$oldPurged = PurgeTokens(token_get_all($source, TOKEN_PARSE), $tNoCompare);
 
 if ($newPurged != $oldPurged)
 {
@@ -1184,16 +1250,6 @@ elseif ($onCli)
         print "Error: unable to write to $srcFile.";
         $error = true;
     }
-}
-
-if (PRETTY_DEBUG_MODE)
-{
-    if ( ! $error)
-    {
-        file_put_contents("{$errFolder}pretty.out", CreateSummary($tokens));
-    }
-
-    file_put_contents("{$errFolder}pretty.long.out", print_r($blocks, true));
 }
 
 if ($onCli && $error)

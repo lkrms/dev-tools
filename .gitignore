@@ -1,6 +1,7 @@
 .vscode/*
 *.code-*
 *.sublime-*
+pretty-*/.*
 scripts/exif-settings
 scripts/handbrake-settings
 scripts/log/*.log

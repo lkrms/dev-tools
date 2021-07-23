@@ -6,7 +6,7 @@ $tSkip = array(
 );
 
 // PHP 7 appears to have removed this
-if (defined('T_BAD_CHARACTER'))
+if (defined("T_BAD_CHARACTER"))
 {
     $tSkip[] = T_BAD_CHARACTER;
 }
@@ -28,7 +28,6 @@ $tKeywords = array(
     T_REQUIRE,
     T_REQUIRE_ONCE,
     T_THROW,
-    T_USE,
 );
 
 $tControlWithParentheses = array(
@@ -72,18 +71,24 @@ $tAltControl = array(
 
 $tAssignmentOperators = array(
     "=",
-    T_AND_EQUAL,
-    T_CONCAT_EQUAL,
-    T_DIV_EQUAL,
-    T_MINUS_EQUAL,
-    T_MOD_EQUAL,
-    T_MUL_EQUAL,
-    T_OR_EQUAL,
     T_PLUS_EQUAL,
+    T_MINUS_EQUAL,
+    T_MUL_EQUAL,
+    T_DIV_EQUAL,
+    T_MOD_EQUAL,
+    T_POW_EQUAL,
+    T_AND_EQUAL,
+    T_OR_EQUAL,
+    T_XOR_EQUAL,
     T_SL_EQUAL,
     T_SR_EQUAL,
-    T_XOR_EQUAL,
+    T_CONCAT_EQUAL,
 );
+
+if (defined("T_COALESCE_EQUAL"))
+{
+    $tAssignmentOperators[] = T_COALESCE_EQUAL;
+}
 
 $tArithmeticOperators = array(
     "+",
@@ -105,7 +110,7 @@ $tComparisonOperators = array(
 );
 
 // PHP 7 added this
-if (defined('T_SPACESHIP'))
+if (defined("T_SPACESHIP"))
 {
     $tComparisonOperators[] = T_SPACESHIP;
 }
@@ -131,6 +136,7 @@ $tBitwiseOperators = array(
 $tSpecialOperators = array(
     ".",
     "?",
+    T_COALESCE,
     T_DOUBLE_ARROW,
 );
 
@@ -158,7 +164,12 @@ $tDeclarations = array(
     T_PUBLIC,
     T_PROTECTED,
     T_STATIC,
+    T_USE,
     T_VAR,
+);
+
+$tCollapsibleDeclarations = array(
+    T_USE,
 );
 
 $tNoTrim = array(
@@ -181,7 +192,7 @@ $tComments = array(
     T_DOC_COMMENT,
 );
 
-$tControl       = array_merge($tControlWithParentheses, $tControlNoParentheses, $tControlOptionalParentheses, $tSimpleControl);
-$tAllKeywords   = array_merge($tKeywords, $tControl, $tDeclarations);
-$tAllOperators  = array_merge($tAssignmentOperators, $tArithmeticOperators, $tComparisonOperators, $tLogicalOperators, $tBitwiseOperators, $tSpecialOperators);
-$tNoCompare     = array_merge($tSkip, $tComments);
+$tControl      = array_merge($tControlWithParentheses, $tControlNoParentheses, $tControlOptionalParentheses, $tSimpleControl);
+$tAllKeywords  = array_merge($tKeywords, $tControl, $tDeclarations);
+$tAllOperators = array_merge($tAssignmentOperators, $tArithmeticOperators, $tComparisonOperators, $tLogicalOperators, $tBitwiseOperators, $tSpecialOperators);
+$tNoCompare    = array_merge($tSkip, $tComments);

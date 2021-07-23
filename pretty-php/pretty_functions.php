@@ -12,6 +12,8 @@ class CodeBlock
 
     public $Indent;
 
+    public $InHeredoc;
+
     /**
      * @var CodeBlock
      */
@@ -44,13 +46,14 @@ class CodeBlock
 
     public $BlankLineAfter = false;
 
-    public function __construct($type, $code, $line, $indent, $previous)
+    public function __construct($type, $code, $line, $indent, $inHeredoc, $previous)
     {
-        $this->Type           = $type;
-        $this->Code           = $code;
-        $this->Line           = $line;
-        $this->Indent         = $indent;
-        $this->PreviousBlock  = $previous;
+        $this->Type          = $type;
+        $this->Code          = $code;
+        $this->Line          = $line;
+        $this->Indent        = $indent;
+        $this->InHeredoc     = $inHeredoc;
+        $this->PreviousBlock = $previous;
 
         if (PRETTY_DEBUG_MODE && is_int($type))
         {
@@ -62,14 +65,14 @@ class CodeBlock
     {
         if ($this->BlankLineBefore)
         {
-            $this->LineBefore   = false;
-            $this->SpaceBefore  = false;
+            $this->LineBefore  = false;
+            $this->SpaceBefore = false;
 
             if ( ! is_null($prev))
             {
-                $prev->SpaceAfter      = false;
-                $prev->LineAfter       = false;
-                $prev->BlankLineAfter  = false;
+                $prev->SpaceAfter     = false;
+                $prev->LineAfter      = false;
+                $prev->BlankLineAfter = false;
             }
         }
         elseif ($this->LineBefore)
@@ -84,8 +87,8 @@ class CodeBlock
                 }
                 else
                 {
-                    $prev->SpaceAfter  = false;
-                    $prev->LineAfter   = false;
+                    $prev->SpaceAfter = false;
+                    $prev->LineAfter  = false;
                 }
             }
         }
@@ -106,8 +109,8 @@ class CodeBlock
 
         if ($this->BlankLineAfter)
         {
-            $this->LineAfter   = false;
-            $this->SpaceAfter  = false;
+            $this->LineAfter  = false;
+            $this->SpaceAfter = false;
         }
         elseif ($this->LineAfter)
         {
@@ -118,63 +121,72 @@ class CodeBlock
     public function GetCode()
     {
         global $tComments;
-        $string = null;
-
+        $string   = "";
+        $toEscape = "\000..\037\177..\377\\\$\"";    // equivalent to "\x00..\x1f\x7f..\xff\\\$\""
         switch ($this->Type)
         {
             case T_CONSTANT_ENCAPSED_STRING:
 
-                if (PRETTY_DECODE_STRINGS && $this->Code [0] == '"')
+                if ( ! $this->InHeredoc && ((PRETTY_DECODE_STRINGS && $this->Code[0] == "\"") || PRETTY_DOUBLE_QUOTE_STRINGS))
                 {
                     eval ("\$string = {$this->Code};");
-                    $this->Code = '"' . addcslashes($string, "\000..\037\177..\377\\\$\"") . '"';
+                    $this->Code = "\"" . addcslashes($string, $toEscape) . "\"";
                 }
 
                 break;
 
             case T_ENCAPSED_AND_WHITESPACE:
 
-                if (PRETTY_DECODE_STRINGS)
+                if ( ! $this->InHeredoc && (PRETTY_DECODE_STRINGS || PRETTY_DOUBLE_QUOTE_STRINGS))
                 {
                     eval ("\$string = \"{$this->Code}\";");
-                    $this->Code = addcslashes($string, "\000..\037\177..\377\\\$\"");
+                    $this->Code = addcslashes($string, $toEscape);
                 }
+
+                break;
+
+            case T_START_HEREDOC:
+
+                $this->DeIndent = $this->Indent;
 
                 break;
         }
 
-        $prefix  = "";
-        $suffix  = "";
+        $prefix = "";
+        $suffix = "";
 
-        if ($this->BlankLineBefore)
+        if ( ! $this->InHeredoc)
         {
-            $prefix .= PRETTY_EOL . PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent - $this->DeIndent);
-        }
-        elseif ($this->LineBefore)
-        {
-            $prefix .= PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent - $this->DeIndent);
-        }
-        elseif ($this->TabBefore)
-        {
-            // TODO: align this to nearest tab stop
-            $prefix .= PRETTY_TAB;
-        }
-        elseif ($this->SpaceBefore)
-        {
-            $prefix .= " ";
-        }
+            if ($this->BlankLineBefore)
+            {
+                $prefix .= PRETTY_EOL . PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent - $this->DeIndent);
+            }
+            elseif ($this->LineBefore)
+            {
+                $prefix .= PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent - $this->DeIndent);
+            }
+            elseif ($this->TabBefore)
+            {
+                // TODO: align this to nearest tab stop
+                $prefix .= PRETTY_TAB;
+            }
+            elseif ($this->SpaceBefore)
+            {
+                $prefix .= " ";
+            }
 
-        if ($this->BlankLineAfter)
-        {
-            $suffix .= PRETTY_EOL . PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent - $this->DeIndent);
-        }
-        elseif ($this->LineAfter)
-        {
-            $suffix .= PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent - $this->DeIndent);
-        }
-        elseif ($this->SpaceAfter)
-        {
-            $suffix .= " ";
+            if ($this->BlankLineAfter)
+            {
+                $suffix .= PRETTY_EOL . PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent - $this->DeIndent);
+            }
+            elseif ($this->LineAfter)
+            {
+                $suffix .= PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent - $this->DeIndent);
+            }
+            elseif ($this->SpaceAfter)
+            {
+                $suffix .= " ";
+            }
         }
 
         $code = str_pad($this->Code, $this->PadTo, " ", STR_PAD_LEFT);
@@ -205,8 +217,8 @@ class CodeBlock
 
 function PurgeTokens($tokens, array $toPurge, $removeLineNumbers = true)
 {
-    $purged  = array();
-    $line    = 1;
+    $purged = array();
+    $line   = 1;
 
     foreach ($tokens as $token)
     {
@@ -225,8 +237,8 @@ function PurgeTokens($tokens, array $toPurge, $removeLineNumbers = true)
         }
         else
         {
-            $type   = $code = $token;
-            $token  = array($type, $code);
+            $type  = $code = $token;
+            $token = array($type, $code);
 
             if ( ! $removeLineNumbers)
             {
@@ -245,6 +257,20 @@ function PurgeTokens($tokens, array $toPurge, $removeLineNumbers = true)
     return $purged;
 }
 
+function AnnotateTokens($tokens)
+{
+    foreach ($tokens as & $token)
+    {
+        if (is_array($token))
+        {
+            $token[]  = is_int($token[0]) ? token_name($token[0]) : $token[0];
+            $token[1] = addcslashes($token[1], "\t\n\r");
+        }
+    }
+
+    return $tokens;
+}
+
 function CreateSummary($tokens, $withLines = false)
 {
     $summary = "";
@@ -255,8 +281,8 @@ function CreateSummary($tokens, $withLines = false)
 
         if (is_array($token))
         {
-            $type  = is_int($token[0]) ? token_name($token[0]) : "";
-            $code  = $token[1];
+            $type = is_int($token[0]) ? token_name($token[0]) : "";
+            $code = $token[1];
 
             if ($withLines && isset($token[2]))
             {
@@ -265,8 +291,8 @@ function CreateSummary($tokens, $withLines = false)
         }
         else
         {
-            $type  = "";
-            $code  = $token;
+            $type = "";
+            $code = $token;
         }
 
         $summary .= "$type: $code$line" . PRETTY_EOL;
