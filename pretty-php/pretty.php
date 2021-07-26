@@ -29,7 +29,7 @@ $errFolder = dirname(__FILE__) . "/";
 $onCli = false;
 
 // used to detect line endings below
-$lineEndings = array("\r\n", "\n\r", "\n", "\r", );
+$lineEndings = ["\r\n", "\n\r", "\n", "\r"];
 
 if (php_sapi_name() == "cli")
 {
@@ -401,7 +401,11 @@ for ($i = 0; $i < count($tokens); $i++)
             $indentAfterParentheses = $indentOptionalParentheses = $indentWithoutParentheses = false;
 
             // add or remove spaces before, without breaking heredoc syntax
-            if (PRETTY_SPACE_BEFORE_SEMICOLON && ! ($i >= 1 && $blocks[$i - 1]->Type == T_END_HEREDOC))
+            if ($i >= 1 && $blocks[$i - 1]->Type == T_END_HEREDOC)
+            {
+                $blocks[$i - 1]->LineAfter = false;
+            }
+            elseif (PRETTY_SPACE_BEFORE_SEMICOLON)
             {
                 $block->SpaceBefore = true;
             }
@@ -868,6 +872,7 @@ for ($i = 0; $i < count($tokens); $i++)
 
         case T_START_HEREDOC:
 
+            $block->LineBefore     = true;
             $block->LineAfter      = true;
             $pendingEndCompactTags = true;
             $inHeredoc             = true;
@@ -876,6 +881,7 @@ for ($i = 0; $i < count($tokens); $i++)
 
         case T_END_HEREDOC:
 
+            $block->LineAfter = true;
             $block->InHeredoc = false;
             $inHeredoc        = false;
 
@@ -961,7 +967,7 @@ for ($i = 0; $i < count($tokens); $i++)
 
             if (in_array($type, $tAllKeywords) || in_array($type, $tAllOperators))
             {
-                if ( ! ($type == T_NEW && $i >= 1 && $blocks[$i - 1]->Type == "("))
+                if ( ! (in_array($type, [T_NEW, T_CALLABLE]) && $i >= 1 && $blocks[$i - 1]->Type == "("))
                 {
                     $block->SpaceBefore = true;
                 }

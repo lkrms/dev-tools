@@ -122,7 +122,14 @@ class CodeBlock
     {
         global $tComments;
         $string   = "";
-        $toEscape = "\000..\037\177..\377\\\$\"";    // equivalent to "\x00..\x1f\x7f..\xff\\\$\""
+        $toEscape = "\000..\t\v\f\016..\037\177..\377\\\$\"";    # equivalent to "\x00..\x09\x0b\x0c\x0e..\x1f\x7f..\xff\\\$\""
+
+        // retain newline escapes if they are already present
+        if (preg_match("/^([^\\\\]|\\\\.)*\\\\[nr]/", $this->Code))
+        {
+            $toEscape .= "\r\n";
+        }
+
         switch ($this->Type)
         {
             case T_CONSTANT_ENCAPSED_STRING:

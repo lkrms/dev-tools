@@ -13,6 +13,7 @@ if (defined("T_BAD_CHARACTER"))
 
 $tKeywords = array(
     T_AS,
+    T_CALLABLE,
     T_CLONE,
     T_ECHO,
     T_EVAL,
@@ -96,6 +97,7 @@ $tArithmeticOperators = array(
     "*",
     "/",
     "%",
+    T_POW
 );
 
 $tComparisonOperators = array(
@@ -116,12 +118,12 @@ if (defined("T_SPACESHIP"))
 }
 
 $tLogicalOperators = array(
-    "!",
-    T_BOOLEAN_AND,
-    T_BOOLEAN_OR,
     T_LOGICAL_AND,
     T_LOGICAL_OR,
     T_LOGICAL_XOR,
+    "!",
+    T_BOOLEAN_AND,
+    T_BOOLEAN_OR,
 );
 
 $tBitwiseOperators = array(
