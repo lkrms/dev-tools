@@ -166,6 +166,7 @@ $tDeclarations = array(
     T_PUBLIC,
     T_PROTECTED,
     T_STATIC,
+    T_TRAIT,
     T_USE,
     T_VAR,
 );

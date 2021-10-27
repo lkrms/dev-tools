@@ -52,7 +52,10 @@
 @define("PRETTY_DEBUG_MODE", false);
 
 // convert single-quoted strings to double-quoted strings
-@define("PRETTY_DOUBLE_QUOTE_STRINGS", true);
+@define("PRETTY_DOUBLE_QUOTE_STRINGS", false);
 
 // de-obfuscate strings containing octal / hex / unicode sequences
 @define("PRETTY_DECODE_STRINGS", false);
+
+// assume there are no important line breaks in the code
+@define("PRETTY_IGNORE_LINE_BREAKS", false);

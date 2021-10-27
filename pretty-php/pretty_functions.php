@@ -24,6 +24,8 @@ class CodeBlock
      */
     public $NextBlock;
 
+    public $LineDelta = 0;
+
     public $OutLine;
 
     public $OutCol;
@@ -46,29 +48,134 @@ class CodeBlock
 
     public $BlankLineAfter = false;
 
+    // the following properties are used to track indentation when line breaks
+    // are being preserved
+    private static $DepthStack = [];
+
+    public $Depth;
+
+    public $LastDepth;
+
+    public $LineIndent;
+
     public function __construct($type, $code, $line, $indent, $inHeredoc, $previous)
     {
-        $this->Type          = $type;
-        $this->Code          = $code;
-        $this->Line          = $line;
-        $this->Indent        = $indent;
-        $this->InHeredoc     = $inHeredoc;
-        $this->PreviousBlock = $previous;
+        $this->Type      = $type;
+        $this->Code      = $code;
+        $this->Line      = $line;
+        $this->Indent    = $indent;
+        $this->InHeredoc = $inHeredoc;
 
         if (PRETTY_DEBUG_MODE && is_int($type))
         {
             $this->TypeName = token_name($type);
         }
+
+        if ($previous)
+        {
+            $previous->NextBlock = $this;
+            $this->PreviousBlock = $previous;
+            $this->LineDelta     = $line - ($previous->Line + substr_count($previous->Code, PRETTY_EOL));
+        }
+    }
+
+    public function HasBlankLineAfter()
+    {
+        return $this->BlankLineAfter || ($this->NextBlock->BlankLineBefore ?? false);
+    }
+
+    public function HasLineAfter()
+    {
+        return $this->HasBlankLineAfter() || $this->LineAfter || ($this->NextBlock->LineBefore ?? false);
+    }
+
+    public function HasBlankLineBefore()
+    {
+        return $this->BlankLineBefore || ($this->PreviousBlock->BlankLineAfter ?? false);
+    }
+
+    public function HasLineBefore()
+    {
+        return $this->HasBlankLineBefore() || $this->LineBefore || ($this->PreviousBlock->LineAfter ?? false);
     }
 
     public function Prepare($prev)
     {
+        if (!PRETTY_IGNORE_LINE_BREAKS)
+        {
+            $this->Depth      = $prev->Depth ?? 0;
+            $this->LastDepth  = $prev->LastDepth ?? 0;
+            $this->LineIndent = $prev->LineIndent ?? 0;
+            $opener           = null;
+
+            switch ($this->Type)
+            {
+                case ")":
+                case "]":
+                case "}":
+
+                    $this->Depth--;
+                    $opener = array_pop(self::$DepthStack);
+
+                    break;
+            }
+
+            if ($prev)
+            {
+                if (!$this->HasLineBefore() && (($opener && $opener->HasLineAfter()) || ($this->LineDelta && !($opener && !$opener->HasLineAfter()) && !in_array($this->Type, ["{", "}"]) && (in_array($prev->Type, $GLOBALS["tAllowLineAfter"]) || in_array($this->Type, $GLOBALS["tAllowLineBefore"])))))
+                {
+                    $this->LineBefore = true;
+
+                    if ($this->Depth > $this->LastDepth)
+                    {
+                        $this->LineIndent++;
+                    }
+                    else
+                    {
+                        $this->LineIndent -= $this->LastDepth - $this->Depth;
+                    }
+
+                    $this->LastDepth = $this->Depth;
+                }
+                elseif (($this->HasLineBefore() || $this->HasLineAfter()) && $this->LineIndent && $this->Depth <= $this->LastDepth)
+                {
+                    $this->LineIndent -= $this->LastDepth - $this->Depth;
+                    $this->LastDepth   = $this->Depth;
+                }
+
+                if ($this->LineIndent < 0)
+                {
+                    $this->LineIndent = 0;
+                    $this->LastDepth  = 0;
+                }
+
+                // Preserve but squeeze empty lines
+                if ($this->HasLineBefore() && $this->LineDelta > 1 && (!in_array($prev->Type, ["(", "[", "{"])))
+                {
+                    $this->BlankLineBefore = true;
+                }
+            }
+
+            switch ($this->Type)
+            {
+                case "(":
+                case "[":
+                case "{":
+                case T_CURLY_OPEN:
+
+                    $this->Depth++;
+                    array_push(self::$DepthStack, $this);
+
+                    break;
+            }
+        }
+
         if ($this->BlankLineBefore)
         {
             $this->LineBefore  = false;
             $this->SpaceBefore = false;
 
-            if ( ! is_null($prev))
+            if ($prev)
             {
                 $prev->SpaceAfter     = false;
                 $prev->LineAfter      = false;
@@ -79,7 +186,7 @@ class CodeBlock
         {
             $this->SpaceBefore = false;
 
-            if ( ! is_null($prev))
+            if ($prev)
             {
                 if ($prev->BlankLineAfter)
                 {
@@ -94,7 +201,7 @@ class CodeBlock
         }
         elseif ($this->SpaceBefore)
         {
-            if ( ! is_null($prev))
+            if ($prev)
             {
                 if ($prev->BlankLineAfter || $prev->LineAfter)
                 {
@@ -134,7 +241,7 @@ class CodeBlock
         {
             case T_CONSTANT_ENCAPSED_STRING:
 
-                if ( ! $this->InHeredoc && ((PRETTY_DECODE_STRINGS && $this->Code[0] == "\"") || PRETTY_DOUBLE_QUOTE_STRINGS))
+                if (!$this->InHeredoc && ((PRETTY_DECODE_STRINGS && $this->Code[0] == "\"") || PRETTY_DOUBLE_QUOTE_STRINGS))
                 {
                     eval ("\$string = {$this->Code};");
                     $this->Code = "\"" . addcslashes($string, $toEscape) . "\"";
@@ -144,7 +251,7 @@ class CodeBlock
 
             case T_ENCAPSED_AND_WHITESPACE:
 
-                if ( ! $this->InHeredoc && (PRETTY_DECODE_STRINGS || PRETTY_DOUBLE_QUOTE_STRINGS))
+                if (!$this->InHeredoc && (PRETTY_DECODE_STRINGS || PRETTY_DOUBLE_QUOTE_STRINGS))
                 {
                     eval ("\$string = \"{$this->Code}\";");
                     $this->Code = addcslashes($string, $toEscape);
@@ -154,7 +261,7 @@ class CodeBlock
 
             case T_START_HEREDOC:
 
-                $this->DeIndent = $this->Indent;
+                $this->DeIndent = $this->Indent + $this->LineIndent;
 
                 break;
         }
@@ -162,15 +269,15 @@ class CodeBlock
         $prefix = "";
         $suffix = "";
 
-        if ( ! $this->InHeredoc)
+        if (!$this->InHeredoc)
         {
             if ($this->BlankLineBefore)
             {
-                $prefix .= PRETTY_EOL . PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent - $this->DeIndent);
+                $prefix .= PRETTY_EOL . PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent + $this->LineIndent - $this->DeIndent);
             }
             elseif ($this->LineBefore)
             {
-                $prefix .= PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent - $this->DeIndent);
+                $prefix .= PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent + $this->LineIndent - $this->DeIndent);
             }
             elseif ($this->TabBefore)
             {
@@ -184,11 +291,11 @@ class CodeBlock
 
             if ($this->BlankLineAfter)
             {
-                $suffix .= PRETTY_EOL . PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent - $this->DeIndent);
+                $suffix .= PRETTY_EOL . PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent + $this->LineIndent - $this->DeIndent);
             }
             elseif ($this->LineAfter)
             {
-                $suffix .= PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent - $this->DeIndent);
+                $suffix .= PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent + $this->LineIndent - $this->DeIndent);
             }
             elseif ($this->SpaceAfter)
             {
@@ -215,7 +322,7 @@ class CodeBlock
                 $lines[$l] = $line;
             }
 
-            $code = implode(PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent - $this->DeIndent), $lines);
+            $code = implode(PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent + $this->LineIndent - $this->DeIndent), $lines);
         }
 
         return $prefix . $code . $suffix;
@@ -247,13 +354,13 @@ function PurgeTokens($tokens, array $toPurge, $removeLineNumbers = true)
             $type  = $code = $token;
             $token = array($type, $code);
 
-            if ( ! $removeLineNumbers)
+            if (!$removeLineNumbers)
             {
                 $token[] = $line;
             }
         }
 
-        if ( ! in_array($type, $toPurge))
+        if (!in_array($type, $toPurge))
         {
             $purged[] = $token;
         }
@@ -270,12 +377,23 @@ function AnnotateTokens($tokens)
     {
         if (is_array($token))
         {
-            $token[]  = is_int($token[0]) ? token_name($token[0]) : $token[0];
-            $token[1] = addcslashes($token[1], "\t\n\r");
+            $token[] = is_int($token[0]) ? token_name($token[0]) : $token[0];
         }
     }
 
     return $tokens;
+}
+
+function AnnotateBlocks($blocks)
+{
+    foreach ($blocks as & $block)
+    {
+        $block = clone $block;
+        unset($block->PreviousBlock);
+        unset($block->NextBlock);
+    }
+
+    return $blocks;
 }
 
 function CreateSummary($tokens, $withLines = false)
@@ -309,3 +427,4 @@ function CreateSummary($tokens, $withLines = false)
 }
 
 // PRETTY_NESTED_ARRAYS,0
+// PRETTY_IGNORE_LINE_BREAKS,0
