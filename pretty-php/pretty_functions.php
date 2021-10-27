@@ -122,7 +122,13 @@ class CodeBlock
 
             if ($prev)
             {
-                if (!$this->HasLineBefore() && (($opener && $opener->HasLineAfter()) || ($this->LineDelta && !($opener && !$opener->HasLineAfter()) && !in_array($this->Type, ["{", "}"]) && (in_array($prev->Type, $GLOBALS["tAllowLineAfter"]) || in_array($this->Type, $GLOBALS["tAllowLineBefore"])))))
+                if (!$this->HasLineBefore() &&
+                    (($opener && $opener->HasLineAfter()) ||
+                        ($this->LineDelta &&
+                            !($opener && !$opener->HasLineAfter()) &&
+                            !in_array($this->Type, ["{", "}"]) &&
+                            (in_array($prev->Type, $GLOBALS["tAllowLineAfter"]) ||
+                                in_array($this->Type, $GLOBALS["tAllowLineBefore"])))))
                 {
                     $this->LineBefore = true;
 
@@ -326,6 +332,54 @@ class CodeBlock
         }
 
         return $prefix . $code . $suffix;
+    }
+}
+
+function ApplyConfig($option, $value)
+{
+    switch ($option)
+    {
+        case "PRETTY_CREATE_BACKUPS":
+        case "PRETTY_CREATE_MANY_BACKUPS":
+        case "PRETTY_LINE_BEFORE_BRACE":
+        case "PRETTY_NESTED_ARRAYS":
+        case "PRETTY_INDENT_NESTED_ARRAYS":
+        case "PRETTY_SPACE_BEFORE_SEMICOLON":
+        case "PRETTY_SPACE_BEFORE_FOR_SEMICOLON":
+        case "PRETTY_SPACE_BEFORE_PARENTHESES":
+        case "PRETTY_SPACE_INSIDE_PARENTHESES":
+        case "PRETTY_SPACE_BEFORE_BRACKETS":
+        case "PRETTY_SPACE_INSIDE_BRACKETS":
+        case "PRETTY_SPACE_BEFORE_COLON":
+        case "PRETTY_ALIGN":
+        case "PRETTY_DEBUG_MODE":
+        case "PRETTY_DOUBLE_QUOTE_STRINGS":
+        case "PRETTY_DECODE_STRINGS":
+        case "PRETTY_IGNORE_LINE_BREAKS":
+
+            @define($option, (bool)$value);
+
+            break;
+
+        case "PRETTY_TAB":
+
+            if (preg_match("/^\".*\"\$/", $value))
+            {
+                @define($option, substr($value, 1, -1));
+            }
+            else
+            {
+                @define($option, $value);
+            }
+
+            break;
+
+        case "PRETTY_ALIGN_MIN_ROWS":
+        case "PRETTY_ALIGN_RANGE":
+
+            @define($option, (int)$value);
+
+            break;
     }
 }
 

@@ -66,7 +66,7 @@ if (php_sapi_name() == "cli")
 
     foreach ($lineEndings as $ending)
     {
-        if (substr($line, - strlen($ending)) == $ending)
+        if (substr($line, -strlen($ending)) == $ending)
         {
             define("PRETTY_EOL", $ending);
 
@@ -115,7 +115,12 @@ else
     define("PRETTY_EOL", $ending);
 }
 
-// load any file-specific settings
+// Load settings from the following, giving precedence to the first appearance of each option:
+// 1. the file itself (`// PRETTY_<SETTING>,<VALUE>`)
+// 2. the environment
+// 3. defaults in `pretty_config.php`
+//
+// To enable or disable an option, set its value to 1 (true) or 0 (false) respectively
 $lines = explode(PRETTY_EOL, $source);
 
 foreach ($lines as $line)
@@ -124,50 +129,20 @@ foreach ($lines as $line)
 
     if (substr($line, 0, 10) == "// PRETTY_" && strpos($line, ",") !== false)
     {
-        $line               = substr($line, 3);
-        list ($const, $val) = explode(",", $line, 2);
-
-        switch ($const)
-        {
-            case "PRETTY_CREATE_BACKUPS":
-            case "PRETTY_CREATE_MANY_BACKUPS":
-            case "PRETTY_LINE_BEFORE_BRACE":
-            case "PRETTY_NESTED_ARRAYS":
-            case "PRETTY_INDENT_NESTED_ARRAYS":
-            case "PRETTY_SPACE_BEFORE_SEMICOLON":
-            case "PRETTY_SPACE_BEFORE_FOR_SEMICOLON":
-            case "PRETTY_SPACE_BEFORE_PARENTHESES":
-            case "PRETTY_SPACE_INSIDE_PARENTHESES":
-            case "PRETTY_SPACE_BEFORE_BRACKETS":
-            case "PRETTY_SPACE_INSIDE_BRACKETS":
-            case "PRETTY_SPACE_BEFORE_COLON":
-            case "PRETTY_ALIGN":
-            case "PRETTY_DEBUG_MODE":
-            case "PRETTY_DOUBLE_QUOTE_STRINGS":
-            case "PRETTY_DECODE_STRINGS":
-            case "PRETTY_IGNORE_LINE_BREAKS":
-
-                @define($const, (bool)$val);
-
-                break;
-
-            case "PRETTY_TAB":
-
-                @define($const, substr($val, 1, - 1));
-
-                break;
-
-            case "PRETTY_ALIGN_MIN_ROWS":
-            case "PRETTY_ALIGN_RANGE":
-
-                @define($const, (int)$val);
-
-                break;
-        }
+        $line                  = substr($line, 3);
+        list ($option, $value) = explode(",", $line, 2);
+        ApplyConfig($option, $value);
     }
 }
 
-// set any pending constants to their default values
+foreach ($_SERVER as $option => $value)
+{
+    if (substr($option, 0, 7) == "PRETTY_")
+    {
+        ApplyConfig($option, $value);
+    }
+}
+
 require_once (dirname(__FILE__) . "/pretty_config.php");
 
 // parse the code into PHP tokens
@@ -215,7 +190,7 @@ $lastCollapsibleLine              = 0;
 
 // if present before "=" on any given line, no assignment alignment will occur
 $noAssignment    = array_merge($tAssignmentOperators, $tControl, $tDeclarations);
-$tAllowLineAfter = array_merge(["(", ")", ",", "."],
+$tAllowLineAfter = array_merge(["(", ")", ",", ".", "[", "]"],
     $GLOBALS["tArithmeticOperators"],
     $GLOBALS["tLogicalOperators"]);
 $tAllowLineBefore = [")"];
@@ -351,9 +326,9 @@ for ($i = 0; $i < count($tokens); $i++)
 
             $block->BlankLineAfter = true;
 
-            if (substr($block->Code, - strlen(PRETTY_EOL)) == PRETTY_EOL)
+            if (substr($block->Code, -strlen(PRETTY_EOL)) == PRETTY_EOL)
             {
-                $block->Code = substr($block->Code, 0, - strlen(PRETTY_EOL));
+                $block->Code = substr($block->Code, 0, -strlen(PRETTY_EOL));
             }
 
             break;
@@ -981,12 +956,12 @@ for ($i = 0; $i < count($tokens); $i++)
                 if (!($i >= 1 && $blocks[$i - 1]->Type == "("))
                 {
                     $block->SpaceBefore = true;
+                }
 
-                    // e.g. $i = -1;
-                    if (!($i >= 1 && in_array($type, $tArithmeticOperators) && in_array($blocks[$i - 1]->Type, $tAllOperators)) && !in_array($type, ["!", "~"]))
-                    {
-                        $block->SpaceAfter = true;
-                    }
+                // e.g. $i = -1;
+                if (!($i >= 1 && in_array($type, $tArithmeticOperators) && in_array($blocks[$i - 1]->Type, array_merge($tAllOperators, [","]))) && !in_array($type, ["!", "~"]))
+                {
+                    $block->SpaceAfter = true;
                 }
 
                 // references
