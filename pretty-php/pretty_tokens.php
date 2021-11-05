@@ -36,6 +36,7 @@ $tControlWithParentheses = array(
     T_FOR,
     T_FOREACH,
     T_IF,
+    T_SWITCH,
     T_TRY,
     T_WHILE,
 );

@@ -190,10 +190,10 @@ $lastCollapsibleLine              = 0;
 
 // if present before "=" on any given line, no assignment alignment will occur
 $noAssignment    = array_merge($tAssignmentOperators, $tControl, $tDeclarations);
-$tAllowLineAfter = array_merge(["(", ")", ",", ".", "[", "]"],
+$tAllowLineAfter = array_merge(["(", ")", ",", ".", "[", "]", ":", "?"],
     $GLOBALS["tArithmeticOperators"],
     $GLOBALS["tLogicalOperators"]);
-$tAllowLineBefore = [")"];
+$tAllowLineBefore = [")", ":", "?", "."];
 
 for ($i = 0; $i < count($tokens); $i++)
 {
@@ -607,6 +607,13 @@ for ($i = 0; $i < count($tokens); $i++)
                 $indentParenthesesCount++;
             }
 
+            if ($i >= 1 &&
+                (!in_array($blocks[$i - 1]->Type, array_merge($tAllOperators, $tKeywords, $tControl, $tDeclarations,
+                    [",", ":", ";", "?", "[", "{"])) || ($i >= 2 && $blocks[$i - 2]->Type == T_NEW)))
+            {
+                $blocks[$i - 1]->SpaceAfter = false;
+            }
+
             if (!$declareActive && PRETTY_SPACE_BEFORE_PARENTHESES)
             {
                 $block->SpaceBefore = true;
@@ -660,8 +667,8 @@ for ($i = 0; $i < count($tokens); $i++)
 
             $declareActive = false;
 
-            // empty arrays, calls, etc. should appear as "()", and closure arguments should end without line breaks
-            if ($i >= 1 && in_array($blocks[$i - 1]->Type, ["(", "}"]))
+            // empty arrays, calls, etc. should appear as "()"
+            if ($i >= 1 && in_array($blocks[$i - 1]->Type, ["("]))
             {
                 $block->LineBefore              = false;
                 $block->SpaceBefore             = false;
@@ -946,7 +953,11 @@ for ($i = 0; $i < count($tokens); $i++)
                 $indentAfterParentheses = true;
             }
 
-            if (in_array($type, $tDeclarations) && !($i >= 1 && in_array($blocks[$i - 1]->Type, array_merge($tDeclarations, ["(", ",", "{"]))) && !($i >= 2 && in_array($blocks[$i - 2]->Type, $tDeclarations) && $blocks[$i - 1]->Type == T_STRING) && !($type == T_USE && $i >= 1 && $blocks[$i - 1]->Type == ")"))
+            if (in_array($type, $tDeclarations) &&
+                !($i >= 1 && in_array($blocks[$i - 1]->Type, array_merge($tDeclarations, ["(", ",", "{"]))) &&
+                !($i >= 2 && in_array($blocks[$i - 2]->Type, $tDeclarations) && $blocks[$i - 1]->Type == T_STRING) &&
+                !($type == T_STATIC && ($i >= 1 && !in_array($blocks[$i - 1]->Type, array_merge($tDeclarations, ["}"])))) &&
+                !($type == T_USE && $i >= 1 && $blocks[$i - 1]->Type == ")"))
             {
                 $block->BlankLineBefore = true;
             }
@@ -983,6 +994,11 @@ for ($i = 0; $i < count($tokens); $i++)
                         $ternaryDepth++;
                     }
                 }
+            }
+
+            if ($type == T_DOUBLE_COLON && $i >= 1)
+            {
+                $blocks[$i - 1]->SpaceAfter = false;
             }
 
             // else, elseif, etc. shouldn't appear on a new line
@@ -1044,6 +1060,15 @@ for ($i = 0; $i < count($tokens); $i++)
             }
 
             break;
+    }
+
+    // closure arguments should end without line breaks
+    if (in_array($type, [",", ";", ")"]) && $i >= 1 && in_array($blocks[$i - 1]->Type, ["}"]))
+    {
+        $block->LineBefore              = false;
+        $block->BlankLineBefore         = false;
+        $blocks[$i - 1]->LineAfter      = false;
+        $blocks[$i - 1]->BlankLineAfter = false;
     }
 
     // pin comments to the code below them
@@ -1236,7 +1261,7 @@ if ($newPurged != $oldPurged)
 {
     if ($onCli)
     {
-        print "Error: unable to format $srcFile. Please check your syntax and/or file a bug report.";
+        print "\nError: unable to format $srcFile. Please check your syntax and/or file a bug report.";
         $error = true;
     }
     else
@@ -1248,15 +1273,20 @@ elseif ($onCli)
 {
     if (PRETTY_CREATE_BACKUPS && rename($srcFile, $srcFile . (PRETTY_CREATE_MANY_BACKUPS ? "." . date("YmdHis") : "") . ".bak") === false)
     {
-        print "Error: unable to back up $srcFile.";
+        print "\nError: unable to back up $srcFile.";
         $error = true;
     }
 
     if (file_put_contents($srcFile, $output) === false)
     {
-        print "Error: unable to write to $srcFile.";
+        print "\nError: unable to write to $srcFile.";
         $error = true;
     }
+}
+
+if (PRETTY_DEBUG_MODE)
+{
+    print "\nOutput directory: $debugDir";
 }
 
 if ($onCli && $error)

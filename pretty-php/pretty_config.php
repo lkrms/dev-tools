@@ -13,7 +13,7 @@
 @define("PRETTY_LINE_BEFORE_BRACE", true);
 
 // arrays will appear one-element-per-line if enabled
-@define("PRETTY_NESTED_ARRAYS", true);
+@define("PRETTY_NESTED_ARRAYS", false);
 
 // nested arrays will be left-aligned with their enclosing code if enabled (otherwise they'll be aligned with column 1)
 @define("PRETTY_INDENT_NESTED_ARRAYS", true);
@@ -59,3 +59,6 @@
 
 // assume there are no important line breaks in the code
 @define("PRETTY_IGNORE_LINE_BREAKS", false);
+
+// remove empty lines not enforced by pretty.php
+@define("PRETTY_REMOVE_EMPTY_LINES", false);

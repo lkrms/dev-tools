@@ -52,11 +52,17 @@ class CodeBlock
     // are being preserved
     private static $DepthStack = [];
 
+    private static $LineIndentStack = [];
+
+    private static $LastLineIndentContext;
+
     public $Depth;
 
     public $LastDepth;
 
     public $LineIndent;
+
+    public $PrevLineIndent;
 
     public function __construct($type, $code, $line, $indent, $inHeredoc, $previous)
     {
@@ -99,14 +105,45 @@ class CodeBlock
         return $this->HasBlankLineBefore() || $this->LineBefore || ($this->PreviousBlock->LineAfter ?? false);
     }
 
+    private function MaybePushLineIndentContext()
+    {
+        if ((self::$LastLineIndentContext->Indent ?? -1) < $this->Indent)
+        {
+            self::$LineIndentStack[]     = $this;
+            self::$LastLineIndentContext = $this;
+            $this->PrevLineIndent       += $this->LineIndent;
+            $this->LineIndent            = 0;
+        }
+    }
+
+    private function MaybePopLineIndentContext()
+    {
+        if ((self::$LastLineIndentContext->Indent ?? $this->Indent) > $this->Indent)
+        {
+            $prev                 = array_pop(self::$LineIndentStack)->PreviousBlock;
+            $this->LastDepth      = $prev->LastDepth;
+            $this->LineIndent     = $prev->LineIndent;
+            $this->PrevLineIndent = $prev->PrevLineIndent;
+
+            if (self::$LastLineIndentContext = array_pop(self::$LineIndentStack))
+            {
+                self::$LineIndentStack[] = self::$LastLineIndentContext;
+            }
+        }
+    }
+
     public function Prepare($prev)
     {
         if (!PRETTY_IGNORE_LINE_BREAKS)
         {
-            $this->Depth      = $prev->Depth ?? 0;
-            $this->LastDepth  = $prev->LastDepth ?? 0;
-            $this->LineIndent = $prev->LineIndent ?? 0;
-            $opener           = null;
+            $this->Depth          = $prev->Depth ?? 0;
+            $this->LastDepth      = $prev->LastDepth ?? 0;
+            $this->LineIndent     = $prev->LineIndent ?? 0;
+            $this->PrevLineIndent = $prev->PrevLineIndent ?? 0;
+
+            $this->MaybePopLineIndentContext();
+
+            $opener = null;
 
             switch ($this->Type)
             {
@@ -134,6 +171,7 @@ class CodeBlock
 
                     if ($this->Depth > $this->LastDepth)
                     {
+                        $this->MaybePushLineIndentContext();
                         $this->LineIndent++;
                     }
                     else
@@ -143,20 +181,22 @@ class CodeBlock
 
                     $this->LastDepth = $this->Depth;
                 }
-                elseif (($this->HasLineBefore() || $this->HasLineAfter()) && $this->LineIndent && $this->Depth <= $this->LastDepth)
+                elseif (($this->HasLineBefore() || $this->HasLineAfter()) &&
+                    $this->LineIndent && $this->Depth <= $this->LastDepth)
                 {
                     $this->LineIndent -= $this->LastDepth - $this->Depth;
                     $this->LastDepth   = $this->Depth;
                 }
 
-                if ($this->LineIndent < 0)
+                if ($this->LineIndent <= 0)
                 {
                     $this->LineIndent = 0;
                     $this->LastDepth  = 0;
                 }
 
                 // Preserve but squeeze empty lines
-                if ($this->HasLineBefore() && $this->LineDelta > 1 && (!in_array($prev->Type, ["(", "[", "{"])))
+                if (!PRETTY_REMOVE_EMPTY_LINES &&
+                    $this->HasLineBefore() && $this->LineDelta > 1 && (!in_array($prev->Type, ["(", "[", "{"])))
                 {
                     $this->BlankLineBefore = true;
                 }
@@ -168,6 +208,7 @@ class CodeBlock
                 case "[":
                 case "{":
                 case T_CURLY_OPEN:
+                case T_DOLLAR_OPEN_CURLY_BRACES:
 
                     $this->Depth++;
                     array_push(self::$DepthStack, $this);
@@ -267,7 +308,7 @@ class CodeBlock
 
             case T_START_HEREDOC:
 
-                $this->DeIndent = $this->Indent + $this->LineIndent;
+                $this->DeIndent = $this->Indent + $this->LineIndent + $this->PrevLineIndent;
 
                 break;
         }
@@ -279,11 +320,11 @@ class CodeBlock
         {
             if ($this->BlankLineBefore)
             {
-                $prefix .= PRETTY_EOL . PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent + $this->LineIndent - $this->DeIndent);
+                $prefix .= PRETTY_EOL . PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent + $this->LineIndent + $this->PrevLineIndent - $this->DeIndent);
             }
             elseif ($this->LineBefore)
             {
-                $prefix .= PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent + $this->LineIndent - $this->DeIndent);
+                $prefix .= PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent + $this->LineIndent + $this->PrevLineIndent - $this->DeIndent);
             }
             elseif ($this->TabBefore)
             {
@@ -297,11 +338,11 @@ class CodeBlock
 
             if ($this->BlankLineAfter)
             {
-                $suffix .= PRETTY_EOL . PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent + $this->LineIndent - $this->DeIndent);
+                $suffix .= PRETTY_EOL . PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent + $this->LineIndent + $this->PrevLineIndent - $this->DeIndent);
             }
             elseif ($this->LineAfter)
             {
-                $suffix .= PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent + $this->LineIndent - $this->DeIndent);
+                $suffix .= PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent + $this->LineIndent + $this->PrevLineIndent - $this->DeIndent);
             }
             elseif ($this->SpaceAfter)
             {
@@ -328,7 +369,7 @@ class CodeBlock
                 $lines[$l] = $line;
             }
 
-            $code = implode(PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent + $this->LineIndent - $this->DeIndent), $lines);
+            $code = implode(PRETTY_EOL . str_repeat(PRETTY_TAB, $this->Indent + $this->LineIndent + $this->PrevLineIndent - $this->DeIndent), $lines);
         }
 
         return $prefix . $code . $suffix;
@@ -356,6 +397,7 @@ function ApplyConfig($option, $value)
         case "PRETTY_DOUBLE_QUOTE_STRINGS":
         case "PRETTY_DECODE_STRINGS":
         case "PRETTY_IGNORE_LINE_BREAKS":
+        case "PRETTY_REMOVE_EMPTY_LINES":
 
             @define($option, (bool)$value);
 
