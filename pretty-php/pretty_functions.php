@@ -64,6 +64,19 @@ class CodeBlock
 
     public $PrevLineIndent;
 
+    public $PendingDepthDelta = 0;
+
+    public $DepthDelta = 0;
+
+    private const OPEN_SHUT = [
+        ["(", ")"],
+        ["[", "]"],
+        ["{", "}"],
+        [T_CURLY_OPEN, "}"],
+        [T_DOLLAR_OPEN_CURLY_BRACES, "}"],
+        [",", ","],
+    ];
+
     public function __construct($type, $code, $line, $indent, $inHeredoc, $previous)
     {
         $this->Type      = $type;
@@ -132,11 +145,30 @@ class CodeBlock
         }
     }
 
+    private function ApplyClosestLineIndent($prev)
+    {
+        // Find the last block at the start of a line with the same depth and
+        // use its LineIndent
+        while ($prev && ($this->Depth < ($prev->Depth + $prev->DepthDelta) || !$prev->HasLineBefore()))
+        {
+            $prev = $prev->PreviousBlock;
+        }
+
+        if ($prev)
+        {
+            $this->LineIndent = $prev->LineIndent - ($this->PrevLineIndent - $prev->PrevLineIndent);
+        }
+        else
+        {
+            $this->LineIndent = 0;
+        }
+    }
+
     public function Prepare($prev)
     {
         if (!PRETTY_IGNORE_LINE_BREAKS)
         {
-            $this->Depth          = $prev->Depth ?? 0;
+            $this->Depth          = ($prev->Depth ?? 0) + ($prev->PendingDepthDelta ?? 0);
             $this->LastDepth      = $prev->LastDepth ?? 0;
             $this->LineIndent     = $prev->LineIndent ?? 0;
             $this->PrevLineIndent = $prev->PrevLineIndent ?? 0;
@@ -145,16 +177,72 @@ class CodeBlock
 
             $opener = null;
 
-            switch ($this->Type)
+            if ($prev && !in_array([$prev->Type, $this->Type], self::OPEN_SHUT))
             {
-                case ")":
-                case "]":
-                case "}":
+                switch ($prev->Type)
+                {
+                    case "(":
+                    case "[":
+                    case "{":
+                    case T_CURLY_OPEN:
+                    case T_DOLLAR_OPEN_CURLY_BRACES:
 
-                    $this->Depth--;
-                    $opener = array_pop(self::$DepthStack);
+                        $this->Depth++;
+                        array_push(self::$DepthStack, $this);
 
-                    break;
+                        // When comparing token depths, add DepthDelta to Depth
+                        // if the "real" depth is needed
+                        $this->DepthDelta = -1;
+
+                        break;
+                }
+            }
+
+            if (!$this->NextBlock || !in_array([$this->Type, $this->NextBlock->Type], self::OPEN_SHUT))
+            {
+                switch ($this->Type)
+                {
+                    case "(":
+                    case "[":
+                    case "{":
+                    case T_CURLY_OPEN:
+                    case T_DOLLAR_OPEN_CURLY_BRACES:
+
+                        $this->Depth++;
+                        array_push(self::$DepthStack, $this);
+
+                        break;
+                }
+            }
+
+            if (!$prev || !in_array([$prev->Type, $this->Type], self::OPEN_SHUT))
+            {
+                switch ($this->Type)
+                {
+                    case ")":
+                    case "]":
+                    case "}":
+
+                        $this->Depth--;
+                        $opener = array_pop(self::$DepthStack);
+
+                        break;
+                }
+            }
+
+            if ($this->NextBlock && !in_array([$this->Type, $this->NextBlock->Type], self::OPEN_SHUT))
+            {
+                switch ($this->NextBlock->Type)
+                {
+                    case ")":
+                    case "]":
+                    case "}":
+
+                        $this->PendingDepthDelta--;
+                        array_pop(self::$DepthStack);
+
+                        break;
+                }
             }
 
             if ($prev)
@@ -169,23 +257,26 @@ class CodeBlock
                 {
                     $this->LineBefore = true;
 
-                    if ($this->Depth > $this->LastDepth)
-                    {
-                        $this->MaybePushLineIndentContext();
-                        $this->LineIndent++;
-                    }
-                    else
-                    {
-                        $this->LineIndent -= $this->LastDepth - $this->Depth;
-                    }
+                    $this->MaybePushLineIndentContext();
 
-                    $this->LastDepth = $this->Depth;
+                    if ($prev->Depth + $prev->PendingDepthDelta > $prev->LastDepth)
+                    {
+                        $this->LineIndent++;
+                        $this->LastDepth = in_array($this->Type, ["(", "[", "{", T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES])
+                            ? $this->Depth - 1
+                            : $this->Depth;
+                    }
+                    elseif ($this->Depth < $this->LastDepth)
+                    {
+                        $this->ApplyClosestLineIndent($prev);
+                        $this->LastDepth = $this->Depth;
+                    }
                 }
                 elseif (($this->HasLineBefore() || $this->HasLineAfter()) &&
-                    $this->LineIndent && $this->Depth <= $this->LastDepth)
+                    $this->LineIndent && $this->Depth < $this->LastDepth)
                 {
-                    $this->LineIndent -= $this->LastDepth - $this->Depth;
-                    $this->LastDepth   = $this->Depth;
+                    $this->ApplyClosestLineIndent($prev);
+                    $this->LastDepth = $this->Depth;
                 }
 
                 if ($this->LineIndent <= 0)
@@ -200,20 +291,43 @@ class CodeBlock
                 {
                     $this->BlankLineBefore = true;
                 }
+
+                // Preserve single-line blocks
+                if ($opener && $opener->PreviousBlock && $opener->PreviousBlock->Line == $this->Line)
+                {
+                    $this->SpaceBefore = $this->SpaceBefore || $this->BlankLineBefore || $this->LineBefore;
+
+                    $this->BlankLineBefore = false;
+                    $this->LineBefore      = false;
+
+                    $block = $this->PreviousBlock;
+
+                    while ($block !== $opener->PreviousBlock)
+                    {
+                        $block->SpaceBefore = $block->SpaceBefore || $block->BlankLineBefore || $block->LineBefore;
+                        $block->SpaceAfter  = $block->SpaceAfter || $block->LineAfter || $block->BlankLineAfter;
+
+                        $block->BlankLineBefore = false;
+                        $block->LineBefore      = false;
+                        $block->LineAfter       = false;
+                        $block->BlankLineAfter  = false;
+
+                        $block = $block->PreviousBlock;
+                    }
+                }
+            }
+        }
+
+        if ($prev && !$this->InHeredoc)
+        {
+            if ($prev->BlankLineAfter)
+            {
+                $this->BlankLineBefore = true;
             }
 
-            switch ($this->Type)
+            if ($prev->LineAfter)
             {
-                case "(":
-                case "[":
-                case "{":
-                case T_CURLY_OPEN:
-                case T_DOLLAR_OPEN_CURLY_BRACES:
-
-                    $this->Depth++;
-                    array_push(self::$DepthStack, $this);
-
-                    break;
+                $this->LineBefore = true;
             }
         }
 
@@ -469,7 +583,7 @@ function PurgeTokens($tokens, array $toPurge, $removeLineNumbers = true)
 
 function AnnotateTokens($tokens)
 {
-    foreach ($tokens as & $token)
+    foreach ($tokens as &$token)
     {
         if (is_array($token))
         {
@@ -482,7 +596,7 @@ function AnnotateTokens($tokens)
 
 function AnnotateBlocks($blocks)
 {
-    foreach ($blocks as & $block)
+    foreach ($blocks as &$block)
     {
         $block = clone $block;
         unset($block->PreviousBlock);

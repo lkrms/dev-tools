@@ -2,7 +2,7 @@
 
 /**
  * PrettyPhp: Just another PHP beautifier.
- * Copyright (c) 2012-2021 Luke Arms
+ * Copyright (c) 2012-2022 Luke Arms
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ require_once (dirname(__FILE__) . "/pretty_functions.php");
 require_once (dirname(__FILE__) . "/pretty_tokens.php");
 
 //
-$debugDir = sys_get_temp_dir() . "/pretty-php";
+$debugDir = "/tmp/pretty-php";
 
 if (!is_dir($debugDir) && !mkdir($debugDir))
 {
@@ -185,7 +185,7 @@ $indentOptionalTerminators        = array(";", "{", "(");
 $compactTags                      = false;
 $pendingEndCompactTags            = false;
 $ternaryDepth                     = 0;
-$lastCollapsibleType              = null;
+$lastCollapsible                  = null;
 $lastCollapsibleLine              = 0;
 
 // if present before "=" on any given line, no assignment alignment will occur
@@ -324,7 +324,8 @@ for ($i = 0; $i < count($tokens); $i++)
         case T_OPEN_TAG:
         case T_OPEN_TAG_WITH_ECHO:
 
-            $block->BlankLineAfter = true;
+            //$block->BlankLineAfter = true;
+            $block->LineAfter = true;
 
             if (substr($block->Code, -strlen(PRETTY_EOL)) == PRETTY_EOL)
             {
@@ -345,6 +346,7 @@ for ($i = 0; $i < count($tokens); $i++)
             }
             else
             {
+                //$block->LineBefore = true;
                 $block->BlankLineBefore = true;
                 $block->DeIndent        = $block->Indent;
             }
@@ -419,8 +421,9 @@ for ($i = 0; $i < count($tokens); $i++)
             if (($i >= 2 && $blocks[$i - 2]->Type == T_CASE) || ($i >= 1 && $blocks[$i - 1]->Type == T_DEFAULT) || ($i >= 4 && $blocks[$i - 4]->Type == T_CASE && $blocks[$i - 2]->Type == T_DOUBLE_COLON))
             {
                 // switch-related
-                $block->BlankLineAfter = !$compactTags;
-                $block->SpaceAfter     = $compactTags;
+                //$block->BlankLineAfter = !$compactTags;
+                $block->LineAfter  = !$compactTags;
+                $block->SpaceAfter = $compactTags;
             }
             elseif ($ternaryDepth)
             {
@@ -480,8 +483,11 @@ for ($i = 0; $i < count($tokens); $i++)
             }
             else
             {
-                $block->LineBefore  = !$compactTags;
-                $block->SpaceBefore = $compactTags;
+                $block->LineBefore = !$compactTags && !(
+                    ($block->PreviousBlock->Type ?? null) == ")" &&
+                    $block->PreviousBlock->Line > ($block->PreviousBlock->PreviousBlock->Line ?? 0)
+                );
+                $block->SpaceBefore = !$block->LineBefore;
                 $pendingLineBefore  = !$compactTags;
                 $block->SpaceAfter  = $compactTags;
                 $pendingIndent++;
@@ -509,7 +515,8 @@ for ($i = 0; $i < count($tokens); $i++)
                 break;
             }
 
-            $block->BlankLineAfter = true;
+            //$block->BlankLineAfter = true;
+            $block->LineAfter = true;
 
             if ($i >= 1)
             {
@@ -678,8 +685,8 @@ for ($i = 0; $i < count($tokens); $i++)
             }
             elseif ($requestBlank)
             {
-                $blankAfterSemicolon              = true;
-                $blankAfterSemicolonNoParentheses = true;
+                //$blankAfterSemicolon              = true;
+                //$blankAfterSemicolonNoParentheses = true;
             }
 
             break;
@@ -692,7 +699,8 @@ for ($i = 0; $i < count($tokens); $i++)
             }
 
             // could be a PHP 5.4 array
-            if (!(($i >= 1 && in_array($blocks[$i - 1]->Type, array(T_VARIABLE, "(", ")", "[", "]"))) || ($i >= 2 && $blocks[$i - 1]->Type == T_STRING && $blocks[$i - 2]->Type == T_OBJECT_OPERATOR)))
+            if (!(($i >= 1 && in_array($blocks[$i - 1]->Type, array(T_VARIABLE, "(", ")", "[", "]"))) ||
+                ($i >= 2 && $blocks[$i - 1]->Type == T_STRING && in_array($blocks[$i - 2]->Type, [T_OBJECT_OPERATOR, T_DOUBLE_COLON]))))
             {
                 $block->SpaceBefore = true;
 
@@ -775,8 +783,8 @@ for ($i = 0; $i < count($tokens); $i++)
             }
             elseif ($requestBlank)
             {
-                $blankAfterSemicolon              = true;
-                $blankAfterSemicolonNoParentheses = true;
+                //$blankAfterSemicolon              = true;
+                //$blankAfterSemicolonNoParentheses = true;
             }
 
             break;
@@ -807,6 +815,7 @@ for ($i = 0; $i < count($tokens); $i++)
 
         case T_SWITCH:
 
+            //$block->LineBefore  = !$compactTags;
             $block->BlankLineBefore = !$compactTags;
             $block->SpaceBefore     = $compactTags;
             $block->SpaceAfter      = true;
@@ -819,6 +828,7 @@ for ($i = 0; $i < count($tokens); $i++)
         case T_CASE:
         case T_DEFAULT:
 
+            //$block->LineBefore  = !$compactTags;
             $block->BlankLineBefore = !$compactTags;
             $block->SpaceBefore     = $compactTags;
             $block->SpaceAfter      = $type == T_CASE;
@@ -847,7 +857,8 @@ for ($i = 0; $i < count($tokens); $i++)
             }
             else
             {
-                $block->BlankLineBefore = true;
+                $block->BlankLineBefore = ($type == T_DOC_COMMENT && strpos($block->Code, "\n") !== false);
+                $block->LineBefore      = !$block->BlankLineBefore;
             }
 
             $block->LineAfter      = true;
@@ -857,7 +868,6 @@ for ($i = 0; $i < count($tokens); $i++)
 
         case T_START_HEREDOC:
 
-            $block->LineBefore     = true;
             $block->LineAfter      = true;
             $pendingEndCompactTags = true;
             $inHeredoc             = true;
@@ -880,8 +890,18 @@ for ($i = 0; $i < count($tokens); $i++)
 
         case T_HALT_COMPILER:
 
-            $block->BlankLineBefore = true;
-            $pendingEndCompactTags  = true;
+            //$block->BlankLineBefore = true;
+            $block->LineBefore     = true;
+            $pendingEndCompactTags = true;
+
+            break;
+
+        case T_ELLIPSIS:
+
+            if ($i >= 1 && !in_array($blocks[$i - 1]->Type, ["("]))
+            {
+                $block->SpaceBefore = true;
+            }
 
             break;
 
@@ -896,15 +916,15 @@ for ($i = 0; $i < count($tokens); $i++)
 
             if (in_array($type, $tControl) && !in_array($type, $tControlOptions))
             {
-                if (!($i >= 1 && in_array($blocks[$i - 1]->Type, ["{"])))
-                {
-                    $block->BlankLineBefore = !$compactTags;
-                }
-                else
-                {
-                    $block->LineBefore = !$compactTags;
-                }
-
+                //if (!($i >= 1 && in_array($blocks[$i - 1]->Type, ["{"])))
+                //{
+                //    $block->BlankLineBefore = !$compactTags;
+                //}
+                //else
+                //{
+                //    $block->LineBefore = !$compactTags;
+                //}
+                $block->LineBefore  = !$compactTags;
                 $block->SpaceBefore = $compactTags;
 
                 if ($type == T_DO)
@@ -917,8 +937,9 @@ for ($i = 0; $i < count($tokens); $i++)
 
                     if ($doIndents && ($d = array_pop($doIndents)) == $indent)
                     {
-                        $block->BlankLineBefore = false;
-                        $block->SpaceBefore     = true;
+                        //$block->BlankLineBefore = false;
+                        $block->LineBefore  = false;
+                        $block->SpaceBefore = true;
 
                         if ($blocks[$i - 1]->Type == "}")
                         {
@@ -926,7 +947,7 @@ for ($i = 0; $i < count($tokens); $i++)
                             $blocks[$i - 1]->LineAfter      = PRETTY_LINE_BEFORE_BRACE;
                         }
 
-                        $blankAfterSemicolon = true;
+                        //$blankAfterSemicolon = true;
                     }
                     elseif (isset($d))
                     {
@@ -954,7 +975,7 @@ for ($i = 0; $i < count($tokens); $i++)
             }
 
             if (in_array($type, $tDeclarations) &&
-                !($i >= 1 && in_array($blocks[$i - 1]->Type, array_merge($tDeclarations, ["(", ",", "{"]))) &&
+                !($i >= 1 && in_array($blocks[$i - 1]->Type, array_merge($tDeclarations, $tSimpleControl, $tKeywords, ["(", ",", "{", "="]))) &&
                 !($i >= 2 && in_array($blocks[$i - 2]->Type, $tDeclarations) && $blocks[$i - 1]->Type == T_STRING) &&
                 !($type == T_STATIC && ($i >= 1 && !in_array($blocks[$i - 1]->Type, array_merge($tDeclarations, ["}"])))) &&
                 !($type == T_USE && $i >= 1 && $blocks[$i - 1]->Type == ")"))
@@ -964,7 +985,7 @@ for ($i = 0; $i < count($tokens); $i++)
 
             if (in_array($type, $tAllKeywords) || in_array($type, $tAllOperators))
             {
-                if (!($i >= 1 && $blocks[$i - 1]->Type == "("))
+                if (!($i >= 1 && in_array($blocks[$i - 1]->Type, ["(", "[", ","])))
                 {
                     $block->SpaceBefore = true;
                 }
@@ -976,7 +997,7 @@ for ($i = 0; $i < count($tokens); $i++)
                 }
 
                 // references
-                if ($type == "&" && $i >= 1 && in_array($blocks[$i - 1]->Type, ["(", ","]))
+                if (in_array($type, ["&", T_AMPERSAND_FOLLOWED_BY_VAR_OR_VARARG, T_AMPERSAND_NOT_FOLLOWED_BY_VAR_OR_VARARG]) && $i >= 1 && in_array($blocks[$i - 1]->Type, ["(", ",", "[", T_AS]))
                 {
                     $block->SpaceBefore = false;
                     $block->SpaceAfter  = false;
@@ -1045,7 +1066,7 @@ for ($i = 0; $i < count($tokens); $i++)
 
                     if (!$altIndents)
                     {
-                        $blankAfterSemicolon = true;
+                        //$blankAfterSemicolon = true;
                     }
                 }
                 elseif (isset($a))
@@ -1071,15 +1092,15 @@ for ($i = 0; $i < count($tokens); $i++)
         $blocks[$i - 1]->BlankLineAfter = false;
     }
 
-    // pin comments to the code below them
-    if ($block->BlankLineBefore && !in_array($type, $noCommentPin))
+    // align comments to the code below them
+    if (($block->BlankLineBefore || $block->LineBefore) && !in_array($type, $noCommentPin))
     {
         $j = $i - 1;
 
         while ($j > 0 && in_array($blocks[$j]->Type, $tComments))
         {
-            // retain blank lines between comment blocks of different types
-            if ($j == $i - 1 && !(in_array($type, $tComments) && ($type != $blocks[$j]->Type || substr($block->Code, 0, 2) != substr($blocks[$j]->Code, 0, 2))))
+            // collapse blank lines between comments and subsequent code
+            if ($j == $i - 1 && !in_array($type, $tComments))
             {
                 $block->BlankLineBefore = false;
             }
@@ -1090,6 +1111,7 @@ for ($i = 0; $i < count($tokens); $i++)
         }
     }
 
+    $block->LineBefore      = $block->LineBefore || ($block->BlankLineBefore && !(!PRETTY_LINE_BEFORE_BRACE || !($i >= 1 && $blocks[$i - 1]->Type == "{")));
     $block->BlankLineBefore = $block->BlankLineBefore && (!PRETTY_LINE_BEFORE_BRACE || !($i >= 1 && $blocks[$i - 1]->Type == "{"));
 
     // keep un-braced code blocks tight
@@ -1150,13 +1172,21 @@ for ($i = 0; $i < count($blocks); $i++)
 
     if (in_array($block->Type, $tCollapsibleDeclarations))
     {
-        if ($lastCollapsibleType == $block->Type && $line - $lastCollapsibleLine < 3)
+        $decl        = $block;
+        $collapsible = [$decl->Code];
+        while (!$decl->BlankLineBefore && in_array(($decl->PreviousBlock->Type ?? null), $tDeclarations))
         {
-            $block->BlankLineBefore = false;
-            $block->LineBefore      = true;
+            $decl          = $decl->PreviousBlock;
+            $collapsible[] = $decl->Code;
         }
 
-        $lastCollapsibleType = $block->Type;
+        if ($lastCollapsible == $collapsible && $line - $lastCollapsibleLine < 3)
+        {
+            $decl->LineBefore      = $decl->BlankLineBefore;
+            $decl->BlankLineBefore = false;
+        }
+
+        $lastCollapsible     = $collapsible;
         $lastCollapsibleLine = $line;
     }
 
@@ -1301,6 +1331,7 @@ if ($onCli)
 
 // PRETTY_NESTED_ARRAYS,0
 // PRETTY_IGNORE_LINE_BREAKS,0
+// PRETTY_ALIGN_RANGE,20
 
 ?>
 <html>

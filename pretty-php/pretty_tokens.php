@@ -54,6 +54,8 @@ $tSimpleControl = array(
     T_BREAK,
     T_CONTINUE,
     T_RETURN,
+    T_YIELD,
+    T_YIELD_FROM,
 );
 
 $tControlOptions = array(
@@ -136,6 +138,12 @@ $tBitwiseOperators = array(
     T_SR,
 );
 
+if (defined("T_AMPERSAND_FOLLOWED_BY_VAR_OR_VARARG"))
+{
+    $tBitwiseOperators[] = T_AMPERSAND_FOLLOWED_BY_VAR_OR_VARARG;
+    $tBitwiseOperators[] = T_AMPERSAND_NOT_FOLLOWED_BY_VAR_OR_VARARG;
+}
+
 $tSpecialOperators = array(
     ".",
     "?",
@@ -173,7 +181,9 @@ $tDeclarations = array(
 );
 
 $tCollapsibleDeclarations = array(
+    T_CONST,
     T_USE,
+    T_VAR,
 );
 
 $tNoTrim = array(
