@@ -189,8 +189,8 @@ $lastCollapsible                  = null;
 $lastCollapsibleLine              = 0;
 
 // if present before "=" on any given line, no assignment alignment will occur
-$noAssignment    = array_merge($tAssignmentOperators, $tControl, $tDeclarations);
-$tAllowLineAfter = array_merge(["(", ")", ",", ".", "[", "]", ":", "?"],
+$noAssignment    = array_diff(array_merge($tAssignmentOperators, $tControl, $tDeclarations), $tCollapsibleDeclarations, $tVisibility);
+$tAllowLineAfter = array_merge(["(", ")", ",", ".", "[", "]", ":", "?", T_COALESCE, "=", T_DOUBLE_ARROW],
     $GLOBALS["tArithmeticOperators"],
     $GLOBALS["tLogicalOperators"]);
 $tAllowLineBefore = [")", ":", "?", "."];
@@ -464,7 +464,8 @@ for ($i = 0; $i < count($tokens); $i++)
 
         case "{":
 
-            if ($curlyOpenCount)
+            // ... and also if they are delimiting a variable property name
+            if ($curlyOpenCount || ($i >= 1 && $blocks[$i - 1]->Type == T_OBJECT_OPERATOR))
             {
                 $curlyOpenCount++;
 
@@ -815,10 +816,10 @@ for ($i = 0; $i < count($tokens); $i++)
 
         case T_SWITCH:
 
-            //$block->LineBefore  = !$compactTags;
-            $block->BlankLineBefore = !$compactTags;
-            $block->SpaceBefore     = $compactTags;
-            $block->SpaceAfter      = true;
+            $block->LineBefore = !$compactTags;
+            //$block->BlankLineBefore = !$compactTags;
+            $block->SpaceBefore = $compactTags;
+            $block->SpaceAfter  = true;
 
             // this is how we handle the weirdness of switch structures
             array_push($switchIndents, ++$indent);
@@ -828,10 +829,10 @@ for ($i = 0; $i < count($tokens); $i++)
         case T_CASE:
         case T_DEFAULT:
 
-            //$block->LineBefore  = !$compactTags;
-            $block->BlankLineBefore = !$compactTags;
-            $block->SpaceBefore     = $compactTags;
-            $block->SpaceAfter      = $type == T_CASE;
+            $block->LineBefore = !$compactTags;
+            //$block->BlankLineBefore = !$compactTags;
+            $block->SpaceBefore = $compactTags;
+            $block->SpaceAfter  = $type == T_CASE;
             $block->Indent--;
 
             // collapse empty lines between contiguous case/default statements
@@ -896,18 +897,11 @@ for ($i = 0; $i < count($tokens); $i++)
 
             break;
 
-        case T_ELLIPSIS:
-
-            if ($i >= 1 && !in_array($blocks[$i - 1]->Type, ["("]))
-            {
-                $block->SpaceBefore = true;
-            }
-
-            break;
-
         case T_VARIABLE:
 
-            if ($i >= 1 && $blocks[$i - 1]->Type == T_STRING && !($blocks[$i - 1]->SpaceAfter || $blocks[$i - 1]->LineAfter || $blocks[$i - 1]->BlankLineAfter))
+            if ($i >= 1 &&
+                in_array($blocks[$i - 1]->Type, [T_STRING, T_NAME_FULLY_QUALIFIED]) &&
+                !($blocks[$i - 1]->SpaceAfter || $blocks[$i - 1]->LineAfter || $blocks[$i - 1]->BlankLineAfter))
             {
                 $block->SpaceBefore = true;
             }
@@ -975,8 +969,8 @@ for ($i = 0; $i < count($tokens); $i++)
             }
 
             if (in_array($type, $tDeclarations) &&
-                !($i >= 1 && in_array($blocks[$i - 1]->Type, array_merge($tDeclarations, $tSimpleControl, $tKeywords, ["(", ",", "{", "="]))) &&
-                !($i >= 2 && in_array($blocks[$i - 2]->Type, $tDeclarations) && $blocks[$i - 1]->Type == T_STRING) &&
+                !($i >= 1 && in_array($blocks[$i - 1]->Type, array_merge($tDeclarations, $tSimpleControl, $tKeywords, ["(", ",", "{", "=", T_DOUBLE_ARROW]))) &&
+                !($i >= 2 && in_array($blocks[$i - 2]->Type, $tDeclarations) && in_array($blocks[$i - 1]->Type, [T_STRING, T_NAME_FULLY_QUALIFIED])) &&
                 !($type == T_STATIC && ($i >= 1 && !in_array($blocks[$i - 1]->Type, array_merge($tDeclarations, ["}"])))) &&
                 !($type == T_USE && $i >= 1 && $blocks[$i - 1]->Type == ")"))
             {
@@ -996,13 +990,6 @@ for ($i = 0; $i < count($tokens); $i++)
                     $block->SpaceAfter = true;
                 }
 
-                // references
-                if (in_array($type, ["&", T_AMPERSAND_FOLLOWED_BY_VAR_OR_VARARG, T_AMPERSAND_NOT_FOLLOWED_BY_VAR_OR_VARARG]) && $i >= 1 && in_array($blocks[$i - 1]->Type, ["(", ",", "[", T_AS]))
-                {
-                    $block->SpaceBefore = false;
-                    $block->SpaceAfter  = false;
-                }
-
                 if ($type == "?")
                 {
                     if ($i >= 1 && in_array($blocks[$i - 1]->Type, ["(", ",", ":"]))
@@ -1014,6 +1001,23 @@ for ($i = 0; $i < count($tokens); $i++)
                     {
                         $ternaryDepth++;
                     }
+                }
+            }
+
+            if ($type == T_ELLIPSIS && $i >= 1 &&
+                !in_array($blocks[$i - 1]->Type, ["(", "[", "&", T_AMPERSAND_FOLLOWED_BY_VAR_OR_VARARG, T_AMPERSAND_NOT_FOLLOWED_BY_VAR_OR_VARARG]))
+            {
+                $block->SpaceBefore = true;
+            }
+
+            // references
+            if ($i >= 2 && in_array($blocks[$i - 1]->Type, ["&", T_AMPERSAND_FOLLOWED_BY_VAR_OR_VARARG    /*, T_AMPERSAND_NOT_FOLLOWED_BY_VAR_OR_VARARG */ ]))
+            {
+                if ($type == T_ELLIPSIS ||
+                    in_array($blocks[$i - 2]->Type, ["(", ",", "[", T_AS]))
+                {
+                    $blocks[$i - 1]->SpaceAfter  = false;
+                    $blocks[$i - 1]->SpaceBefore = !in_array($blocks[$i - 2]->Type, ["(", ",", "["]);
                 }
             }
 
@@ -1150,12 +1154,13 @@ if (PRETTY_DEBUG_MODE)
 }
 
 // first pass
-$output = "";
+$output     = "";
+$lineAdjust = 0;
 
 for ($i = 0; $i < count($blocks); $i++)
 {
     $block = $blocks[$i];
-    $line  = substr_count($output, PRETTY_EOL) + 1;
+    $line  = substr_count($output, PRETTY_EOL) + 1 + $lineAdjust;
     $col   = strrpos($output, PRETTY_EOL);
 
     if ($col === false)
@@ -1182,6 +1187,17 @@ for ($i = 0; $i < count($blocks); $i++)
 
         if ($lastCollapsible == $collapsible && $line - $lastCollapsibleLine < 3)
         {
+            if ($decl->BlankLineBefore)
+            {
+                $lineAdjust--;
+                $decl2 = $decl;
+                do
+                {
+                    $decl2->OutLine--;
+                    $decl2 = $decl2->NextBlock;
+                }
+                while (!is_null($decl2->OutLine) && $decl2 !== $block);
+            }
             $decl->LineBefore      = $decl->BlankLineBefore;
             $decl->BlankLineBefore = false;
         }

@@ -1,15 +1,17 @@
 <?php
 
+defined("T_AMPERSAND_FOLLOWED_BY_VAR_OR_VARARG") || define("T_AMPERSAND_FOLLOWED_BY_VAR_OR_VARARG", 10001);
+defined("T_AMPERSAND_NOT_FOLLOWED_BY_VAR_OR_VARARG") || define("T_AMPERSAND_NOT_FOLLOWED_BY_VAR_OR_VARARG", 10002);
+defined("T_BAD_CHARACTER") || define("T_BAD_CHARACTER", 10003);
+defined("T_COALESCE_EQUAL") || define("T_COALESCE_EQUAL", 10004);
+defined("T_NAME_FULLY_QUALIFIED") || define("T_NAME_FULLY_QUALIFIED", 10005);
+defined("T_SPACESHIP") || define("T_SPACESHIP", 10006);
+
 // these tokens are purged before processing begins
 $tSkip = array(
     T_WHITESPACE,
+    T_BAD_CHARACTER,
 );
-
-// PHP 7 appears to have removed this
-if (defined("T_BAD_CHARACTER"))
-{
-    $tSkip[] = T_BAD_CHARACTER;
-}
 
 $tKeywords = array(
     T_AS,
@@ -29,6 +31,8 @@ $tKeywords = array(
     T_REQUIRE,
     T_REQUIRE_ONCE,
     T_THROW,
+    T_INSTEADOF,
+
 );
 
 $tControlWithParentheses = array(
@@ -87,12 +91,8 @@ $tAssignmentOperators = array(
     T_SL_EQUAL,
     T_SR_EQUAL,
     T_CONCAT_EQUAL,
+    T_COALESCE_EQUAL,
 );
-
-if (defined("T_COALESCE_EQUAL"))
-{
-    $tAssignmentOperators[] = T_COALESCE_EQUAL;
-}
 
 $tArithmeticOperators = array(
     "+",
@@ -112,13 +112,8 @@ $tComparisonOperators = array(
     T_IS_NOT_EQUAL,
     T_IS_NOT_IDENTICAL,
     T_IS_SMALLER_OR_EQUAL,
+    T_SPACESHIP,
 );
-
-// PHP 7 added this
-if (defined("T_SPACESHIP"))
-{
-    $tComparisonOperators[] = T_SPACESHIP;
-}
 
 $tLogicalOperators = array(
     T_LOGICAL_AND,
@@ -136,13 +131,9 @@ $tBitwiseOperators = array(
     "~",
     T_SL,
     T_SR,
+    T_AMPERSAND_FOLLOWED_BY_VAR_OR_VARARG,
+    T_AMPERSAND_NOT_FOLLOWED_BY_VAR_OR_VARARG,
 );
-
-if (defined("T_AMPERSAND_FOLLOWED_BY_VAR_OR_VARARG"))
-{
-    $tBitwiseOperators[] = T_AMPERSAND_FOLLOWED_BY_VAR_OR_VARARG;
-    $tBitwiseOperators[] = T_AMPERSAND_NOT_FOLLOWED_BY_VAR_OR_VARARG;
-}
 
 $tSpecialOperators = array(
     ".",
@@ -184,6 +175,12 @@ $tCollapsibleDeclarations = array(
     T_CONST,
     T_USE,
     T_VAR,
+);
+
+$tVisibility = array(
+    T_PRIVATE,
+    T_PROTECTED,
+    T_PUBLIC,
 );
 
 $tNoTrim = array(
